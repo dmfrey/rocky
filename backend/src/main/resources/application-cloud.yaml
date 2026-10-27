@@ -26,8 +26,8 @@ app:
     # APP_GENAI_EMBEDDING_SERVICE if yours are named differently). Each service is normally on a
     # single-model plan; app.genai.chat-model / embedding-model are only needed to pick one model
     # out of an all-models plan.
-    chat-service: client-rag-demo-chat
-    embedding-service: client-rag-demo-embed
+    chat-service: rocky-chat
+    embedding-service: rocky-embed
 
 spring:
   autoconfigure:

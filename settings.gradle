@@ -1,4 +1,4 @@
-rootProject.name = 'client-rag-demo'
+rootProject.name = 'rocky'
 
 include 'backend'
 // Shared hexagonal ingestion logic (document domain model, ports, Tika/chunk/pgvector adapter)

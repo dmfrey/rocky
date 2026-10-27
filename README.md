@@ -1,4 +1,4 @@
-# Client RAG Demo
+# Rocky
 
 A retrieval-augmented generation (RAG) chat application. Authenticated users build a shared
 knowledge base of documents, then chat with an LLM whose answers are grounded in that content and

@@ -13,7 +13,7 @@ class FilesystemVolumeEnvironmentPostProcessorTest {
             {"block-storage":[{"name":"rag-docs-volume","label":"block-storage","tags":["block-storage"],
               "credentials":{},
               "volume_mounts":[{"container_dir":"/var/vcap/data/abc-123","device_type":"dedicated","mode":"rw"}]}],
-             "postgres":[{"name":"client-rag-demo-db","label":"postgres","credentials":{},"volume_mounts":[]}]}""";
+             "postgres":[{"name":"rocky-db","label":"postgres","credentials":{},"volume_mounts":[]}]}""";
 
     private static FilesystemVolumeEnvironmentPostProcessor processor(String vcapServices) {
         return new FilesystemVolumeEnvironmentPostProcessor(() -> new CfEnv("{}", vcapServices));

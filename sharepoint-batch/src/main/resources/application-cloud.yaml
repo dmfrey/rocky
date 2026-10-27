@@ -10,7 +10,7 @@ app:
   genai:
     # Override with APP_GENAI_EMBEDDING_SERVICE if the service is named differently. Normally a
     # single-model plan; app.genai.embedding-model only picks one model out of an all-models plan.
-    embedding-service: client-rag-demo-embed
+    embedding-service: rocky-embed
 
 spring:
   autoconfigure:

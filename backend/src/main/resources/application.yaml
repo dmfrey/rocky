@@ -6,7 +6,7 @@ logging:
 
 spring:
   application:
-    name: client-rag-demo
+    name: rocky
 
   ai:
     openai:

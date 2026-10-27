@@ -8,12 +8,12 @@
 # - the volume service; none of those are required unless this file is pushed.
 version: 1
 applications:
-  - name: client-rag-demo-sharepoint-batch
+  - name: rocky-sharepoint-batch
     # A Spring Cloud Task app (see SharepointBatchApplication's @EnableTask/CLAUDE.md) - runs
     # sharePointSyncJob once to completion and exits, rather than staying up as a long-lived
     # process. `cf push` here only STAGES the droplet (instances: 0 - it's never actually
     # started as a running app); the job itself is triggered on demand or on a schedule via:
-    #   cf run-task client-rag-demo-sharepoint-batch
+    #   cf run-task rocky-sharepoint-batch
     # (an external scheduler - e.g. Scheduler for VMware Tanzu, or plain cron calling `cf
     # run-task` - is what decides *when*; this app no longer schedules itself internally, unlike
     # its earlier @Scheduled-based design).
@@ -31,8 +31,8 @@ applications:
     no-route: true
     env:
       # Activates application-cloud.yaml: the embedding model comes from the bound
-      # client-rag-demo-embed service (ingestion-core's GenaiBindingsConfiguration), and Postgres
-      # from client-rag-demo-db (java-cfenv-boot, bundled in the jar) - no vars.yml involved. This
+      # rocky-embed service (ingestion-core's GenaiBindingsConfiguration), and Postgres
+      # from rocky-db (java-cfenv-boot, bundled in the jar) - no vars.yml involved. This
       # app only embeds documents (no chat), so it is bound to the embedding service alone. If that
       # service is named differently, set APP_GENAI_EMBEDDING_SERVICE; an all-models plan is
       # rejected as ambiguous at startup unless APP_GENAI_EMBEDDING_MODEL names the model. At

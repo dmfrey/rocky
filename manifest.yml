@@ -7,8 +7,8 @@
 #   1. Decide the backend's route (the `routes:` value below) - it has to be known up front,
 #      since the frontend build needs it and CF manifest variables aren't resolved until push
 #      time, too late for a static build.
-#   2. cd frontend && VITE_API_BASE_URL=https://client-rag-demo-backend.apps.tas-ndc.kuhn-labs.com npm run build
-#   3. client-rag-demo-db (postgres), client-rag-demo-chat and client-rag-demo-embed (two
+#   2. cd frontend && VITE_API_BASE_URL=https://rocky-backend.apps.tas-ndc.kuhn-labs.com npm run build
+#   3. rocky-db (postgres), rocky-chat and rocky-embed (two
 #      single-model ai-models services) and rag-docs-volume already exist (`cf services`) and are
 #      bound to the apps below. Both Java apps read their Postgres and model-endpoint credentials
 #      straight from those bindings (java-cfenv), so there is no vars.yml and no service key to
@@ -23,14 +23,14 @@
 # CLAUDE.md). deploy-cf.yaml builds the jars itself before pushing.
 version: 1
 applications:
-  - name: client-rag-demo-backend
+  - name: rocky-backend
     path: backend/build/libs/backend-0.0.1-SNAPSHOT.jar
     buildpacks:
       - java_buildpack_offline
     memory: 1500M  # JVM, not the old native image
     instances: 1
     routes:
-      - route: client-rag-demo-backend.apps.tas-ndc.kuhn-labs.com
+      - route: rocky-backend.apps.tas-ndc.kuhn-labs.com
     # CF's own health check model doesn't distinguish liveness/readiness the way Kubernetes
     # does (see application.yaml's management.endpoint.health.probes - that split is for a
     # Kubernetes-based platform) - the aggregate endpoint is the right one to point CF at here.
@@ -44,7 +44,7 @@ applications:
       # separate routes/origins here, not one shared origin.
       SPRING_PROFILES_ACTIVE: cloud
       # Postgres and the GenAI proxy come from the bound services, not from env vars: the jar
-      # bundles java-cfenv-boot (sets spring.datasource.* from the client-rag-demo-db binding)
+      # bundles java-cfenv-boot (sets spring.datasource.* from the rocky-db binding)
       # and GenaiModelConfiguration reads the two GenAI services' endpoints from their bindings
       # (see services: below). Nothing here needs a service key or vars.yml.
       #
@@ -54,8 +54,8 @@ applications:
       # The jar targets Java 25.
       JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 25.+ } }'
       # Which model is used is decided by which GenAI service is bound, not by a name here: the
-      # chat model is the one client-rag-demo-chat grants and the embedding model the one
-      # client-rag-demo-embed grants (single-model plans - see services: below). The service names
+      # chat model is the one rocky-chat grants and the embedding model the one
+      # rocky-embed grants (single-model plans - see services: below). The service names
       # default to those two in application-cloud.yaml; if yours are named differently set
       #   APP_GENAI_CHAT_SERVICE / APP_GENAI_EMBEDDING_SERVICE
       # A service on an all-models plan is rejected as ambiguous at startup unless
@@ -79,22 +79,22 @@ applications:
       # pathological enough to need its own investigation, not another blanket chunkSize drop.
       APP_DOCUMENTS_INGESTION_CHUNK_SIZE: "128"
       # Must match the frontend's actual route below exactly (scheme + host, no trailing slash).
-      APP_CORS_ALLOWED_ORIGINS: https://client-rag-demo-frontend.apps.tas-ndc.kuhn-labs.com
+      APP_CORS_ALLOWED_ORIGINS: https://rocky-frontend.apps.tas-ndc.kuhn-labs.com
     services:
       # postgres/on-demand-postgres-db. This app needs the pgvector extension available
       # (db/changelog/documents/db.changelog-documents-002.yaml runs `CREATE EXTENSION vector`) -
       # this is VMware Tanzu for Postgres, which generally supports it, but that hasn't been
       # confirmed against this specific instance/plan yet - if the Liquibase migration fails on
       # that CREATE EXTENSION step, that's the first thing to check.
-      - client-rag-demo-db
+      - rocky-db
       # Two ai-models services, each on a single-model plan, so each one's model is explicit:
-      #   cf create-service ai-models tanzu-gpt-oss-120b client-rag-demo-chat       (CHAT)
-      #   cf create-service ai-models tanzu-nomic-embed-text-v2 client-rag-demo-embed   (EMBEDDING)
+      #   cf create-service ai-models tanzu-gpt-oss-120b rocky-chat       (CHAT)
+      #   cf create-service ai-models tanzu-nomic-embed-text-v2 rocky-embed   (EMBEDDING)
       # Their endpoints and API keys come from these bindings (java-cfenv), not from vars.yml.
-      - client-rag-demo-chat
-      - client-rag-demo-embed
+      - rocky-chat
+      - rocky-embed
 
-  - name: client-rag-demo-frontend
+  - name: rocky-frontend
     # Built by `npm run build` (see step 2 above) - not built by CF, just served as-is.
     path: frontend/dist
     buildpacks:
@@ -102,14 +102,14 @@ applications:
     memory: 64M
     instances: 1
     routes:
-      - route: client-rag-demo-frontend.apps.tas-ndc.kuhn-labs.com
+      - route: rocky-frontend.apps.tas-ndc.kuhn-labs.com
 
-  - name: client-rag-demo-sharepoint-batch
+  - name: rocky-sharepoint-batch
     # A Spring Cloud Task app (see SharepointBatchApplication's @EnableTask/CLAUDE.md) - runs
     # sharePointSyncJob once to completion and exits, rather than staying up as a long-lived
     # process. `cf push` here only STAGES the droplet (instances: 0 - it's never actually
     # started as a running app); the job itself is triggered on demand or on a schedule via:
-    #   cf run-task client-rag-demo-sharepoint-batch
+    #   cf run-task rocky-sharepoint-batch
     # (an external scheduler - e.g. Scheduler for VMware Tanzu, or plain cron calling `cf
     # run-task` - is what decides *when*; this app no longer schedules itself internally, unlike
     # its earlier @Scheduled-based design).
@@ -130,8 +130,8 @@ applications:
     no-route: true
     env:
       # Activates application-cloud.yaml: the embedding model comes from the bound
-      # client-rag-demo-embed service (ingestion-core's GenaiBindingsConfiguration), and Postgres
-      # from client-rag-demo-db (java-cfenv-boot, bundled in the jar) - no vars.yml involved. This
+      # rocky-embed service (ingestion-core's GenaiBindingsConfiguration), and Postgres
+      # from rocky-db (java-cfenv-boot, bundled in the jar) - no vars.yml involved. This
       # app only embeds documents (no chat), so it is bound to the embedding service alone. If that
       # service is named differently, set APP_GENAI_EMBEDDING_SERVICE; an all-models plan is
       # rejected as ambiguous at startup unless APP_GENAI_EMBEDDING_MODEL names the model. At
@@ -160,6 +160,6 @@ applications:
       # overrides that; APP_FILESYSTEM_SOURCE_VOLUME_SERVICE names the binding if yours isn't
       # called rag-docs-volume.
     services:
-      - client-rag-demo-db
-      - client-rag-demo-embed
+      - rocky-db
+      - rocky-embed
       - rag-docs-volume

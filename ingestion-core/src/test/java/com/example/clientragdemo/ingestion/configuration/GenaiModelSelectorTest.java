@@ -18,9 +18,9 @@ class GenaiModelSelectorTest {
 
     @Test
     void rejectsAServiceThatGrantsNoModelOfTheCapability() {
-        assertThatThrownBy(() -> GenaiModelSelector.select("client-rag-demo-embed", "EMBEDDING", List.of(), null))
+        assertThatThrownBy(() -> GenaiModelSelector.select("rocky-embed", "EMBEDDING", List.of(), null))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("client-rag-demo-embed")
+                .hasMessageContaining("rocky-embed")
                 .hasMessageContaining("no EMBEDDING model");
     }
 

@@ -13,12 +13,12 @@ deploy-batch: false
 # --- Routes (fully-qualified hostnames, no scheme). The frontend is built to call the backend at
 # --- https://<backend-route>, and the backend's CORS origin is https://<frontend-route>; both come
 # --- from these two values, so they cannot disagree. `cf domains` lists the domains you can use.
-backend-route: client-rag-demo-backend.apps.example.com
-frontend-route: client-rag-demo-frontend.apps.example.com
+backend-route: rocky-backend.apps.example.com
+frontend-route: rocky-frontend.apps.example.com
 
 # --- Files, relative to this folder. GitHub Packages names SNAPSHOT jars with a timestamp
-# --- (e.g. client-rag-demo-backend-0.0.1-20261015.171059-2.jar) - use the name you downloaded.
-backend-jar: ./client-rag-demo-backend-0.0.1-SNAPSHOT.jar
+# --- (e.g. rocky-backend-0.0.1-20261015.171059-2.jar) - use the name you downloaded.
+backend-jar: ./rocky-backend-0.0.1-SNAPSHOT.jar
 frontend-dir: ./frontend-dist
 
 # --- Buildpacks (`cf buildpacks`). The Java one must bundle a Java 25 JRE.
@@ -30,9 +30,9 @@ staticfile-buildpack: staticfile_buildpack
 # ---   cf create-service ai-models <chat-model-plan>      <chat-service>    (a CHAT model)
 # ---   cf create-service ai-models <embedding-model-plan> <embed-service>   (a 768-dimension EMBEDDING model)
 # --- The same names drive both the app's binding and the app's lookup of it.
-db-service: client-rag-demo-db
-chat-service: client-rag-demo-chat
-embed-service: client-rag-demo-embed
+db-service: rocky-db
+chat-service: rocky-chat
+embed-service: rocky-embed
 # --- OPTIONAL - skip it if the foundation has no vision model; everything else works without it.
 # --- A third GenAI service whose model supports VISION, so image files (.png .jpg .gif) and
 # --- scanned PDFs can be read. Leave empty to keep it off (such files then fail ingestion with a
@@ -50,7 +50,7 @@ startup-timeout: 180
 # ======================================================================================
 # --- Batch job (manifest-batch.yml): only used when deploy-batch is true / --with-batch.
 # ======================================================================================
-batch-jar: ./client-rag-demo-sharepoint-batch-0.0.1-SNAPSHOT.jar
+batch-jar: ./rocky-sharepoint-batch-0.0.1-SNAPSHOT.jar
 batch-memory: 1500M
 # filesystem (a mounted directory) or graph (Microsoft Graph). graph needs extra settings - see
 # README.md.

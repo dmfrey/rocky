@@ -59,7 +59,7 @@ jobs:
           gh release download frontend-latest --repo ${{ github.repository }} --pattern '*.tar.gz' --output frontend-dist.tar.gz --clobber
           mkdir -p frontend/dist
           tar -xzf frontend-dist.tar.gz -C frontend/dist
-          find frontend/dist -name '*.js' -exec sed -i 's|__RUNTIME_API_BASE_URL__|https://client-rag-demo-backend.apps.tas-ndc.kuhn-labs.com|g' {} +
+          find frontend/dist -name '*.js' -exec sed -i 's|__RUNTIME_API_BASE_URL__|https://rocky-backend.apps.tas-ndc.kuhn-labs.com|g' {} +
 
       - name: Install cf CLI
         run: |

@@ -1,4 +1,4 @@
-# Client RAG Demo — v1 Requirements
+# Rocky — v1 Requirements
 
 Working spec for the first version of the app.
 

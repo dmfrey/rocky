@@ -21,8 +21,8 @@
 #   preflight.sh            checks vars, files, buildpacks, services and routes before pushing
 #   prepare-frontend.sh     points the pre-built frontend bundle at your backend route
 #   deploy.sh               preflight + prepare-frontend + cf push, in one go
-#   <backend jar>           GitHub Packages: com.example:client-rag-demo-backend
-#   <batch jar>             (only with the batch job) com.example:client-rag-demo-sharepoint-batch
+#   <backend jar>           GitHub Packages: com.example:rocky-backend
+#   <batch jar>             (only with the batch job) com.example:rocky-sharepoint-batch
 #   frontend-dist.tar.gz    GitHub Release frontend-latest (extracted into ./frontend-dist)
 #
 # Then, from this folder:  ./deploy.sh frontend-dist.tar.gz     (or step by step - see README.md)
@@ -31,7 +31,7 @@
 # Java 25 JRE, and the staticfile buildpack (their names are variables - `cf buildpacks`).
 version: 1
 applications:
-  - name: client-rag-demo-backend
+  - name: rocky-backend
     path: ((backend-jar))
     buildpacks:
       - ((java-buildpack))
@@ -52,7 +52,7 @@ applications:
       # separate routes/origins here, not one shared origin.
       SPRING_PROFILES_ACTIVE: cloud
       # Postgres and the GenAI proxy come from the bound services, not from env vars: the jar
-      # bundles java-cfenv-boot (sets spring.datasource.* from the client-rag-demo-db binding)
+      # bundles java-cfenv-boot (sets spring.datasource.* from the rocky-db binding)
       # and GenaiModelConfiguration reads the two GenAI services' endpoints from their bindings
       # (see services: below). Nothing here needs a service key or vars.yml.
       #
@@ -62,8 +62,8 @@ applications:
       # The jar targets Java 25.
       JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 25.+ } }'
       # Which model is used is decided by which GenAI service is bound, not by a name here: the
-      # chat model is the one client-rag-demo-chat grants and the embedding model the one
-      # client-rag-demo-embed grants (single-model plans - see services: below). The service names
+      # chat model is the one rocky-chat grants and the embedding model the one
+      # rocky-embed grants (single-model plans - see services: below). The service names
       # come from the same ((chat-service)) / ((embed-service)) variables as services: below, so
       # the binding and the app's lookup of it cannot disagree.
       APP_GENAI_CHAT_SERVICE: ((chat-service))
@@ -105,7 +105,7 @@ applications:
       - ((chat-service))
       - ((embed-service))
 
-  - name: client-rag-demo-frontend
+  - name: rocky-frontend
     # Pre-built static bundle (frontend-dist.tar.gz from the frontend-latest release), served as-is.
     # Before pushing it must be pointed at the real backend route - ./prepare-frontend.sh does that
     # from ((backend-route)) (deploy.sh runs it for you). No Node/npm needed.

@@ -26,13 +26,13 @@ org/space you are deploying to).
 
 | Artifact | Where to get it |
 |---|---|
-| `client-rag-demo-backend-<version>.jar` | GitHub Packages (Maven): `com.example:client-rag-demo-backend` |
-| `client-rag-demo-sharepoint-batch-<version>.jar` | *Only if you deploy the batch job.* GitHub Packages (Maven): `com.example:client-rag-demo-sharepoint-batch` |
+| `rocky-backend-<version>.jar` | GitHub Packages (Maven): `com.example:rocky-backend` |
+| `rocky-sharepoint-batch-<version>.jar` | *Only if you deploy the batch job.* GitHub Packages (Maven): `com.example:rocky-sharepoint-batch` |
 | `frontend-dist.tar.gz` | GitHub Release `frontend-latest` |
 | this `offline/` folder | the repo |
 
 Packages are SNAPSHOTs, so file names carry a timestamp, for example
-`client-rag-demo-backend-0.0.1-20261015.171059-2.jar` - put the name you downloaded in `vars.yml`
+`rocky-backend-0.0.1-20261015.171059-2.jar` - put the name you downloaded in `vars.yml`
 (`backend-jar`, `batch-jar`); there is no need to rename anything.
 
 ## 2. Foundation prerequisites
@@ -145,7 +145,7 @@ database the backend has not migrated at least once. Once deployed, trigger inge
 from an external scheduler:
 
 ```bash
-cf run-task client-rag-demo-sharepoint-batch
+cf run-task rocky-sharepoint-batch
 ```
 
 ### Changing something later
