@@ -31,7 +31,7 @@
 # Java 25 JRE, and the staticfile buildpack (their names are variables - `cf buildpacks`).
 version: 1
 applications:
-  - name: rocky-backend
+  - name: ((backend-app))
     path: ((backend-jar))
     buildpacks:
       - ((java-buildpack))
@@ -67,8 +67,8 @@ applications:
       # come from the same ((chat-service)) / ((embed-service)) variables as services: below, so
       # the binding and the app's lookup of it cannot disagree.
       APP_GENAI_CHAT_SERVICE: ((chat-service))
-      # Optional: increase the timeout for slower internal models (for example 300s).
-      # APP_GENAI_CHAT_TIMEOUT: ((chat-timeout))
+      # Optional chat timeout for slow models: set chat-timeout in vars.yml and deploy.sh applies
+      # APP_GENAI_CHAT_TIMEOUT with cf set-env (a manifest cannot leave a variable unset).
       APP_GENAI_EMBEDDING_SERVICE: ((embed-service))
       # A service on an all-models plan is rejected as ambiguous at startup unless
       #   APP_GENAI_CHAT_MODEL / APP_GENAI_EMBEDDING_MODEL
@@ -107,7 +107,7 @@ applications:
       - ((chat-service))
       - ((embed-service))
 
-  - name: rocky-frontend
+  - name: ((frontend-app))
     # Pre-built static bundle (frontend-dist.tar.gz from the frontend-latest release), served as-is.
     # Before pushing it must be pointed at the real backend route - ./prepare-frontend.sh does that
     # from ((backend-route)) (deploy.sh runs it for you). No Node/npm needed.

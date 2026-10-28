@@ -77,6 +77,8 @@ $EDITOR vars.yml
 
 | Variable | What to put | Also drives |
 |---|---|---|
+| `backend-app`, `frontend-app` | App names (`rocky-backend`, `rocky-frontend`). Change them (with the routes) to run a second copy beside the first, e.g. a UI preview | `cf` commands in the scripts |
+| `batch-app` | *(batch job only)* batch app name (`rocky-sharepoint-batch`) | `cf run-task` target |
 | `backend-route` | Backend hostname (no scheme), on a domain from `cf domains` | the frontend's API URL (`prepare-frontend.sh`) |
 | `frontend-route` | Frontend hostname | the backend's CORS origin (`https://<frontend-route>`) |
 | `backend-jar` | The downloaded backend jar file name | |
@@ -93,7 +95,13 @@ $EDITOR vars.yml
 | `chunk-size` | Document chunk size in tokens, shared by the backend and the batch job (`128` suits an embedding model with a 512-token limit; lower it if documents fail to embed with a "too many tokens" error) | |
 | `backend-memory` | Backend memory (`1500M`) | |
 | `batch-memory` | *(batch job only)* batch memory (`1500M`) | |
+| `stack` | *Optional* - when the foundation has several stacks (`cf stacks`); passed as `--stack` | |
+| `chat-timeout` | *Optional* - e.g. `300s`, for slow chat models; `deploy.sh` sets `APP_GENAI_CHAT_TIMEOUT` and restarts the backend. Unset keeps the library default | |
 | `startup-timeout` | Seconds CF waits for the backend to become healthy (`180`; a JVM start with database migrations is slow) | |
+
+**Upgrading an existing `vars.yml`:** add `backend-app: rocky-backend` and `frontend-app: rocky-frontend` (and `batch-app: rocky-sharepoint-batch` if you deploy the batch job); `preflight.sh` names any variable that is missing.
+
+**A second copy** (e.g. a UI preview): keep one file per site, such as `vars.trevorputbrese.yml.example` (copy to `vars.<name>.yml`, gitignored), and run `VARS=vars.<name>.yml ./deploy.sh frontend-dist.tar.gz`. Use a different `frontend-dir` too. Sharing `db-service` shares users and documents.
 
 Values that must agree are driven by **one** variable each (the route and the CORS origin; a
 service's name and the app's lookup of it), so they cannot drift apart.
@@ -145,7 +153,7 @@ database the backend has not migrated at least once. Once deployed, trigger inge
 from an external scheduler:
 
 ```bash
-cf run-task rocky-sharepoint-batch
+cf run-task <batch-app>
 ```
 
 ### Changing something later

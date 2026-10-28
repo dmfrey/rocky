@@ -36,9 +36,7 @@ pgvector.
 
 ### Frontend
 
-The Clarity visual refresh is described in [the implementation plan](CLARITY-IMPLEMENTATION-PLAN.md),
-with completed work and validation tracked in [the work log](docs/clarity-work-log.md).
-See [preview deployment](docs/clarity-deployment.md) for a separate CF preview and offline packaging.
+The UI uses Clarity (`@clr/ui`) styling. See [preview deployment](docs/clarity-deployment.md) for running a separate CF copy and offline packaging.
 
 Login/registration, consent-banner gate, a documents page (drag-and-drop multi-upload, status
 badges, replace-confirmation, delete), a chat page with streamed answers and source citations, a

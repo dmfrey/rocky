@@ -33,8 +33,7 @@ export function ConfirmDialog({
         cancelRef.current();
       }
       if (event.key === "Tab") {
-        const buttons =
-          dialogRef.current?.querySelectorAll<HTMLButtonElement>("button");
+        const buttons = dialogRef.current?.querySelectorAll<HTMLButtonElement>("button");
         if (!buttons?.length) return;
         const first = buttons[0];
         const last = buttons[buttons.length - 1];

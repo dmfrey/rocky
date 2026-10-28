@@ -20,11 +20,7 @@ export function LoginPage() {
       await login(username, password);
       navigate("/", { replace: true });
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -59,11 +55,7 @@ export function LoginPage() {
             {error}
           </p>
         )}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="btn btn-primary"
-        >
+        <button type="submit" disabled={isSubmitting} className="btn btn-primary">
           {isSubmitting ? "Logging in…" : "Log in"}
         </button>
       </form>

@@ -12,10 +12,8 @@ export function AppShell() {
   const toggleRef = useRef<HTMLButtonElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
   // Reset during a route transition so returning with Back cannot reopen an old drawer.
-  if (navigation.path !== location.pathname)
-    setNavigation({ path: location.pathname, open: false });
-  const navigationOpen =
-    navigation.path === location.pathname && navigation.open;
+  if (navigation.path !== location.pathname) setNavigation({ path: location.pathname, open: false });
+  const navigationOpen = navigation.path === location.pathname && navigation.open;
   function setNavigationOpen(open: boolean) {
     setNavigation({ path: location.pathname, open });
   }

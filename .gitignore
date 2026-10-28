@@ -52,8 +52,8 @@ docs/rag_docs/
 # Prepared offline artifacts are carried separately from source.
 /offline/*.jar
 /offline/frontend-dist.tar.gz
-/offline/frontend-dist/
+/offline/frontend-dist*/
 /offline/backend-metadata.xml
 /offline/SHA256SUMS
 /offline/SOURCE-COMMIT.txt
-/offline/vars.preview.yml
+/offline/vars.*.yml

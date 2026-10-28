@@ -10,6 +10,11 @@
 # --- section below are only needed, and only checked, when it is.
 deploy-batch: false
 
+# --- App names. Change them to run a second copy beside an existing deployment (for example a UI
+# --- preview): use different names and routes, and keep the same services if sharing data is fine.
+backend-app: rocky-backend
+frontend-app: rocky-frontend
+
 # --- Routes (fully-qualified hostnames, no scheme). The frontend is built to call the backend at
 # --- https://<backend-route>, and the backend's CORS origin is https://<frontend-route>; both come
 # --- from these two values, so they cannot disagree. `cf domains` lists the domains you can use.
@@ -46,10 +51,14 @@ vision-service: ""
 chunk-size: "128"
 backend-memory: 1500M
 startup-timeout: 180
+# --- OPTIONAL. Uncomment to set them; left out, the foundation's defaults apply.
+# stack: tanzucflinuxfs1   # when the foundation has several stacks (cf stacks); passed as --stack
+# chat-timeout: 300s       # for slow chat models; deploy.sh sets APP_GENAI_CHAT_TIMEOUT (default: the library's)
 
 # ======================================================================================
 # --- Batch job (manifest-batch.yml): only used when deploy-batch is true / --with-batch.
 # ======================================================================================
+batch-app: rocky-sharepoint-batch
 batch-jar: ./rocky-sharepoint-batch-0.0.1-SNAPSHOT.jar
 batch-memory: 1500M
 # filesystem (a mounted directory) or graph (Microsoft Graph). graph needs extra settings - see

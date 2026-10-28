@@ -87,9 +87,7 @@ describe("Sidebar chat session actions", () => {
     await userEvent.clear(input);
     await userEvent.type(input, "Renamed{Enter}");
 
-    await waitFor(() =>
-      expect(chatApi.rename).toHaveBeenCalledWith(1, "Renamed"),
-    );
+    await waitFor(() => expect(chatApi.rename).toHaveBeenCalledWith(1, "Renamed"));
   });
 
   it("cancels a rename on Escape without saving", async () => {
@@ -126,9 +124,7 @@ describe("Sidebar chat session actions", () => {
     const dialog = await screen.findByRole("alertdialog");
     expect(chatApi.remove).not.toHaveBeenCalled();
 
-    await userEvent.click(
-      within(dialog).getByRole("button", { name: "Delete" }),
-    );
+    await userEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
 
     await waitFor(() => expect(chatApi.remove).toHaveBeenCalledWith(1));
   });
@@ -141,9 +137,7 @@ describe("Sidebar chat session actions", () => {
     await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
 
     const dialog = await screen.findByRole("alertdialog");
-    await userEvent.click(
-      within(dialog).getByRole("button", { name: "Cancel" }),
-    );
+    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
 
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(chatApi.remove).not.toHaveBeenCalled();

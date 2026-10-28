@@ -31,8 +31,7 @@ export function Sidebar() {
   });
 
   const renameMutation = useMutation({
-    mutationFn: ({ id, title }: { id: number; title: string }) =>
-      chatApi.rename(id, title),
+    mutationFn: ({ id, title }: { id: number; title: string }) => chatApi.rename(id, title),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chats"] });
       setRenamingId(null);
@@ -68,10 +67,7 @@ export function Sidebar() {
     renameMutation.mutate({ id, title });
   }
 
-  function handleRenameKeyDown(
-    event: KeyboardEvent<HTMLInputElement>,
-    id: number,
-  ) {
+  function handleRenameKeyDown(event: KeyboardEvent<HTMLInputElement>, id: number) {
     if (event.key === "Enter") {
       event.preventDefault();
       commitRename(id);
@@ -81,8 +77,7 @@ export function Sidebar() {
     }
   }
 
-  const linkClasses = ({ isActive }: { isActive: boolean }) =>
-    `navigation-link ${isActive ? "is-active" : ""}`;
+  const linkClasses = ({ isActive }: { isActive: boolean }) => `navigation-link ${isActive ? "is-active" : ""}`;
 
   return (
     <aside className="sidebar" aria-label="Workspace">
@@ -120,9 +115,7 @@ export function Sidebar() {
             Could not load conversations.
           </p>
         )}
-        {sessionsQuery.data?.length === 0 && (
-          <p className="sidebar-hint">Your conversations will appear here.</p>
-        )}
+        {sessionsQuery.data?.length === 0 && <p className="sidebar-hint">Your conversations will appear here.</p>}
         <ul className="flex flex-col gap-0.5">
           {sessionsQuery.data?.map((session) =>
             renamingId === session.id ? (
@@ -142,9 +135,7 @@ export function Sidebar() {
               <li key={session.id} className="conversation-row">
                 <NavLink
                   to={`/chat/${session.id}`}
-                  className={({ isActive }) =>
-                    `conversation-link ${isActive ? "is-active" : ""}`
-                  }
+                  className={({ isActive }) => `conversation-link ${isActive ? "is-active" : ""}`}
                 >
                   {session.title ?? "New chat"}
                 </NavLink>
@@ -162,18 +153,9 @@ export function Sidebar() {
                     </button>
                   )}
                 >
-                  <DropdownMenuItem onClick={() => startRename(session)}>
-                    Rename
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => archiveMutation.mutate(session.id)}
-                  >
-                    Archive
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    danger
-                    onClick={() => setPendingDelete(session)}
-                  >
+                  <DropdownMenuItem onClick={() => startRename(session)}>Rename</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => archiveMutation.mutate(session.id)}>Archive</DropdownMenuItem>
+                  <DropdownMenuItem danger onClick={() => setPendingDelete(session)}>
                     Delete
                   </DropdownMenuItem>
                 </DropdownMenu>
@@ -183,10 +165,7 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {(createChatMutation.isError ||
-        renameMutation.isError ||
-        archiveMutation.isError ||
-        deleteMutation.isError) && (
+      {(createChatMutation.isError || renameMutation.isError || archiveMutation.isError || deleteMutation.isError) && (
         <p className="sidebar-hint error-text" role="alert">
           Could not update the conversation. Please try again.
         </p>

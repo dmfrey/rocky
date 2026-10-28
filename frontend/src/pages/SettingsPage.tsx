@@ -21,20 +21,13 @@ export function SettingsPage() {
       <div className="page-heading">
         <div>
           <h1>Settings</h1>
-          <p>
-            Manage your profile, account security, and archived conversations.
-          </p>
+          <p>Manage your profile, account security, and archived conversations.</p>
         </div>
       </div>
       <div className="settings-content">
         <div className="settings-tabs" aria-label="Settings sections">
           {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              aria-pressed={activeTab === tab.id}
-            >
+            <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} aria-pressed={activeTab === tab.id}>
               {tab.label}
             </button>
           ))}
@@ -59,11 +52,7 @@ function ProfileSection() {
   const [saved, setSaved] = useState(false);
 
   const updateMutation = useMutation({
-    mutationFn: (input: {
-      firstName: string;
-      lastName: string;
-      email: string;
-    }) => usersApi.updateProfile(input),
+    mutationFn: (input: { firstName: string; lastName: string; email: string }) => usersApi.updateProfile(input),
     onSuccess: (updatedUser) => {
       refreshUser(updatedUser);
       setSaved(true);
@@ -71,11 +60,7 @@ function ProfileSection() {
     },
     onError: (err) => {
       setSaved(false);
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
     },
   });
 
@@ -109,12 +94,7 @@ function ProfileSection() {
       </div>
       <label className="form-label">
         Email
-        <input
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="form-control"
-        />
+        <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="form-control" />
       </label>
       {error && (
         <p role="alert" className="alert alert-danger">
@@ -126,11 +106,7 @@ function ProfileSection() {
           Profile saved.
         </p>
       )}
-      <button
-        type="submit"
-        disabled={updateMutation.isPending}
-        className="btn btn-primary w-fit"
-      >
+      <button type="submit" disabled={updateMutation.isPending} className="btn btn-primary w-fit">
         {updateMutation.isPending ? "Saving…" : "Save profile"}
       </button>
     </form>
@@ -145,8 +121,7 @@ function SecuritySection() {
   const [succeeded, setSucceeded] = useState(false);
 
   const changePasswordMutation = useMutation({
-    mutationFn: (input: { currentPassword: string; newPassword: string }) =>
-      usersApi.changePassword(input),
+    mutationFn: (input: { currentPassword: string; newPassword: string }) => usersApi.changePassword(input),
     onSuccess: () => {
       setSucceeded(true);
       setError(null);
@@ -156,11 +131,7 @@ function SecuritySection() {
     },
     onError: (err) => {
       setSucceeded(false);
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
     },
   });
 
@@ -219,11 +190,7 @@ function SecuritySection() {
           Password changed.
         </p>
       )}
-      <button
-        type="submit"
-        disabled={changePasswordMutation.isPending}
-        className="btn btn-primary w-fit"
-      >
+      <button type="submit" disabled={changePasswordMutation.isPending} className="btn btn-primary w-fit">
         {changePasswordMutation.isPending ? "Changing…" : "Change password"}
       </button>
     </form>

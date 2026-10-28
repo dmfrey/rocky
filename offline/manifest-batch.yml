@@ -8,7 +8,7 @@
 # - the volume service; none of those are required unless this file is pushed.
 version: 1
 applications:
-  - name: rocky-sharepoint-batch
+  - name: ((batch-app))
     # A Spring Cloud Task app (see SharepointBatchApplication's @EnableTask/CLAUDE.md) - runs
     # sharePointSyncJob once to completion and exits, rather than staying up as a long-lived
     # process. `cf push` here only STAGES the droplet (instances: 0 - it's never actually

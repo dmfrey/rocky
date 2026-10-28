@@ -37,5 +37,4 @@ Clarity's Metropolis fonts are embedded in its stylesheet. `Icon.tsx` supplies i
 and the Rocky mark. The distribution includes `public/CLARITY-LICENSE.txt` with the upstream
 Clarity and font licenses. Keep new UI assets local; do not introduce CDN imports.
 
-The [implementation plan](../CLARITY-IMPLEMENTATION-PLAN.md) and
-[work log](../docs/clarity-work-log.md) describe scope, decisions, and verification results.
+See "Clarity styling" in the root `CLAUDE.md` for the decisions behind the styling setup.

@@ -26,11 +26,7 @@ export function RegisterPage() {
       await login(username, password);
       navigate("/", { replace: true });
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -98,11 +94,7 @@ export function RegisterPage() {
             {error}
           </p>
         )}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="btn btn-primary"
-        >
+        <button type="submit" disabled={isSubmitting} className="btn btn-primary">
           {isSubmitting ? "Creating account…" : "Create account"}
         </button>
       </form>

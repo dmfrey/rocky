@@ -10,8 +10,7 @@ export function EmptyChatPage() {
       <p className="eyebrow">YOUR KNOWLEDGE WORKSPACE</p>
       <h1>Answers grounded in your documents</h1>
       <p className="welcome-description">
-        Explore your shared knowledge base with Rocky. Start a new chat or
-        return to a conversation from the sidebar.
+        Explore your shared knowledge base with Rocky. Start a new chat or return to a conversation from the sidebar.
       </p>
       <div className="welcome-steps">
         <div>

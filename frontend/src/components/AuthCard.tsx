@@ -1,15 +1,7 @@
 import type { ReactNode } from "react";
 import { RockyMark } from "./Icon";
 
-export function AuthCard({
-  title,
-  children,
-  wide = false,
-}: {
-  title: string;
-  children: ReactNode;
-  wide?: boolean;
-}) {
+export function AuthCard({ title, children, wide = false }: { title: string; children: ReactNode; wide?: boolean }) {
   return (
     <div className="auth-layout">
       <header className="product-header">
@@ -26,9 +18,7 @@ export function AuthCard({
           {children}
         </div>
       </main>
-      <footer className="auth-footer">
-        Answers grounded in your documents.
-      </footer>
+      <footer className="auth-footer">Answers grounded in your documents.</footer>
     </div>
   );
 }

@@ -36,9 +36,7 @@ export function UserMenu() {
       <DropdownMenuItem onClick={() => navigate("/settings")}>
         <Icon name="settings" size={16} /> Settings
       </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => void handleLogout()}>
-        Log out
-      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => void handleLogout()}>Log out</DropdownMenuItem>
     </DropdownMenu>
   );
 }

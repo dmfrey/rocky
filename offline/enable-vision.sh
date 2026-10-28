@@ -16,8 +16,8 @@
 # images / scanned PDFs fail with a message saying the service grants no VISION model.
 #
 # To turn it off again:
-#   cf unset-env rocky-backend APP_GENAI_VISION_SERVICE && cf unbind-service rocky-backend <service>
-#   (same for rocky-sharepoint-batch), then restart the backend.
+#   cf unset-env <backend-app> APP_GENAI_VISION_SERVICE && cf unbind-service <backend-app> <service>
+#   (same for <batch-app>), then restart the backend.
 set -eu
 cd "$(dirname "$0")" || exit 1
 . ./lib.sh
@@ -28,8 +28,9 @@ if [ -z "$service" ]; then
   exit 0
 fi
 
-apps="rocky-backend"
-[ "$(want_batch)" = true ] && apps="$apps rocky-sharepoint-batch"
+backend=$(get_var backend-app)
+apps="$backend"
+[ "$(want_batch)" = true ] && apps="$apps $(get_var batch-app)"
 
 for app in $apps; do
   echo "Enabling vision for $app (service $service)"
@@ -37,10 +38,10 @@ for app in $apps; do
   cf set-env "$app" APP_GENAI_VISION_SERVICE "$service"
 done
 # The backend is running; the batch job (instances 0) just picks it up on its next task.
-echo "Restarting rocky-backend to pick up the binding"
-if ! cf restart rocky-backend; then
+echo "Restarting $backend to pick up the binding"
+if ! cf restart "$backend"; then
   echo >&2
   echo "The backend did not come back up. To undo vision and recover:" >&2
-  echo "  cf unset-env rocky-backend APP_GENAI_VISION_SERVICE && cf restart rocky-backend" >&2
+  echo "  cf unset-env $backend APP_GENAI_VISION_SERVICE && cf restart $backend" >&2
   exit 1
 fi

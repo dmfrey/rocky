@@ -8,12 +8,7 @@ const LABELS: Record<DocumentStatus, string> = {
 export function StatusBadge({ status }: { status: DocumentStatus }) {
   return (
     <span className={`status-label status-${status.toLowerCase()}`}>
-      <Icon
-        name={
-          status === "READY" ? "check" : status === "FAILED" ? "info" : "more"
-        }
-        size={12}
-      />
+      <Icon name={status === "READY" ? "check" : status === "FAILED" ? "info" : "more"} size={12} />
       {LABELS[status]}
     </span>
   );

@@ -41,9 +41,12 @@ echo
 bash ./preflight.sh
 echo
 
+# Optional stack (e.g. tanzucflinuxfs1 for a foundation with several): passed as --stack, because a
+# manifest cannot leave a field unset. Empty/absent = the foundation's default stack.
+stack=$(get_var stack)
 push() { # <manifest>
-  echo "cf push -f $1 --vars-file $VARS"
-  [ -n "$dry_run" ] || cf push -f "$1" --vars-file "$VARS"
+  echo "cf push -f $1 --vars-file $VARS${stack:+ --stack $stack}"
+  [ -n "$dry_run" ] || cf push -f "$1" --vars-file "$VARS" ${stack:+--stack "$stack"}
 }
 
 push "$MANIFEST"
@@ -53,6 +56,17 @@ if [ "$(want_batch)" = true ]; then
 else
   echo
   echo "Batch job not deployed. Add it later with ./deploy.sh --with-batch (or set deploy-batch: true)."
+fi
+# Optional chat timeout for slow models: set with cf set-env (a manifest cannot leave an env var
+# unset), then picked up by the restart below if vision is enabled, or by one here if not.
+timeout=$(get_var chat-timeout)
+if [ -n "$timeout" ]; then
+  echo
+  echo "cf set-env $(get_var backend-app) APP_GENAI_CHAT_TIMEOUT $timeout"
+  if [ -z "$dry_run" ]; then
+    cf set-env "$(get_var backend-app)" APP_GENAI_CHAT_TIMEOUT "$timeout"
+    [ -n "$(get_var vision-service)" ] || cf restart "$(get_var backend-app)"
+  fi
 fi
 # Optional vision model (images / scanned PDFs): bound with cf commands after the push, because a
 # manifest cannot bind a service conditionally. Skipped when vision-service is empty.

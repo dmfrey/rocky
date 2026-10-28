@@ -1,7 +1,6 @@
 # Deploy the Clarity preview
 
-The preview uses `rocky-clarity-backend` and `rocky-clarity-frontend`, leaving the original
-apps available. It needs two free routes and 1564 MB of additional app memory. Reusing the
+A preview is a second copy of the offline deployment under its own app names and routes (for example `rocky-clarity-backend` and `rocky-clarity-frontend`), leaving the original apps available. It uses the same `offline/manifest.yml` and scripts with a separate vars file. It needs two free routes and 1564 MB of additional app memory. Reusing the
 original database shares accounts, documents, and conversations; the preview is not a data
 sandbox. Use a separate PostgreSQL service with pgvector when data isolation is required.
 
@@ -35,15 +34,17 @@ on the restricted side.
 1. Verify the transferred files with `sha256sum -c SHA256SUMS` inside the release directory.
 2. Confirm `cf target`, services, free route/memory quota, and cached Java 25/staticfile
    buildpacks for the selected stack. All three bound services must be ready.
-3. Copy `offline/vars.preview.yml.example` to `offline/vars.preview.yml`. Fill in your routes,
-   service names, buildpacks, stack, and paths. `chat-timeout: 300s` preserves support for slow
-   internal chat models. Both routes must use HTTPS for cross-origin session cookies.
-4. Use an empty `frontend-dir` for a new bundle so obsolete hashed assets are not retained.
-   From the repository root, prepare the extraction and push:
+3. From `offline/`, copy `vars.trevorputbrese.yml.example` to `vars.trevorputbrese.yml` (gitignored, or
+   your own `vars.<name>.yml`) and fill in routes, service names, buildpacks, stack and paths. It sets
+   `backend-app`/`frontend-app` to the preview names and a separate `frontend-dir`, so the original
+   bundle is untouched; `chat-timeout: 300s` supports slow internal chat models. Both routes must use
+   HTTPS for cross-origin session cookies.
+4. Deploy (`deploy.sh` extracts the bundle into the empty `frontend-dir`, runs `preflight.sh`, pushes,
+   and sets the optional chat timeout/vision binding):
 
 ```bash
-VARS=vars.preview.yml ./offline/prepare-frontend.sh ../build/clarity/release/frontend-dist.tar.gz
-cf push -f offline/manifest-preview.yml --vars-file offline/vars.preview.yml
+cd offline
+VARS=vars.trevorputbrese.yml ./deploy.sh ../../build/clarity/release/frontend-dist.tar.gz
 ```
 
 The frontend preparation substitutes the backend route into a copy of the bundle. Always

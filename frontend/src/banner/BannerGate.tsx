@@ -42,8 +42,7 @@ export function BannerGate({ children }: { children: ReactNode }) {
     return (
       <AuthCard title="Workspace unavailable">
         <p role="alert" className="alert alert-danger">
-          Couldn&apos;t load the consent banner. Please refresh the page to try
-          again.
+          Couldn&apos;t load the consent banner. Please refresh the page to try again.
         </p>
       </AuthCard>
     );
@@ -58,9 +57,7 @@ export function BannerGate({ children }: { children: ReactNode }) {
     try {
       await ackMutation.mutateAsync();
     } catch {
-      setAckError(
-        "Something went wrong recording your acknowledgment. Please try again.",
-      );
+      setAckError("Something went wrong recording your acknowledgment. Please try again.");
     }
   }
 

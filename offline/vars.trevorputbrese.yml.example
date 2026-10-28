@@ -1,0 +1,22 @@
+# Trevor's Clarity UI preview: a second copy of Rocky beside the original, on its own routes.
+# Copy to vars.trevorputbrese.yml (gitignored) and run:  VARS=vars.trevorputbrese.yml ./deploy.sh frontend-dist.tar.gz
+# Reusing these services shares users, documents and model capacity with the original app; for data
+# isolation provision a separate pgvector database and set db-service to it.
+backend-app: rocky-clarity-backend
+frontend-app: rocky-clarity-frontend
+backend-route: rocky-clarity-backend.apps.example.com
+frontend-route: rocky-clarity-frontend.apps.example.com
+backend-jar: ./rocky-backend.jar
+frontend-dir: ./frontend-dist-clarity
+stack: tanzucflinuxfs1
+chat-timeout: 300s
+java-buildpack: java_buildpack_offline
+staticfile-buildpack: staticfile_buildpack
+backend-memory: 1500M
+startup-timeout: 180
+chunk-size: "128"
+db-service: rocky-db
+chat-service: rocky-chat
+embed-service: rocky-embed
+vision-service: ""
+deploy-batch: false

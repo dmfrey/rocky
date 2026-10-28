@@ -17,15 +17,7 @@ const paths = {
   chevron: "m8 4 8 8-8 8",
 } as const;
 
-export function Icon({
-  name,
-  size = 20,
-  style,
-}: {
-  name: keyof typeof paths;
-  size?: number;
-  style?: CSSProperties;
-}) {
+export function Icon({ name, size = 20, style }: { name: keyof typeof paths; size?: number; style?: CSSProperties }) {
   return (
     <svg
       width={size}
@@ -47,19 +39,8 @@ export function Icon({
 
 export function RockyMark() {
   return (
-    <svg
-      width="32"
-      height="32"
-      viewBox="0 0 32 32"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="m3 25 10-19 6 11 3-6 7 14H3Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <path d="m3 25 10-19 6 11 3-6 7 14H3Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
       <path d="m9 14 4 3 4-3" stroke="currentColor" strokeWidth="1.8" />
     </svg>
   );

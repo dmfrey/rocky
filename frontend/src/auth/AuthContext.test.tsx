@@ -27,10 +27,7 @@ describe("session reset on logout", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    client.setQueryData(
-      ["chats"],
-      [{ id: 1, title: "Previous user's conversation" }],
-    );
+    client.setQueryData(["chats"], [{ id: 1, title: "Previous user's conversation" }]);
     vi.mocked(authApi.me).mockResolvedValue({
       id: 1,
       username: "alice",
