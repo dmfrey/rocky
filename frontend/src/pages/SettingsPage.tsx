@@ -17,29 +17,35 @@ export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
 
   return (
-    <div className="mx-auto flex h-full max-w-2xl flex-col gap-6 overflow-y-auto p-6">
-      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Settings</h1>
-
-      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-3 py-2 text-sm font-medium ${
-              activeTab === tab.id
-                ? "border-b-2 border-blue-600 text-blue-700 dark:text-blue-400"
-                : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+    <div className="page">
+      <div className="page-heading">
+        <div>
+          <h1>Settings</h1>
+          <p>
+            Manage your profile, account security, and archived conversations.
+          </p>
+        </div>
       </div>
+      <div className="settings-content">
+        <div className="settings-tabs" aria-label="Settings sections">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              aria-pressed={activeTab === tab.id}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-      {activeTab === "profile" && <ProfileSection />}
-      {activeTab === "security" && <SecuritySection />}
-      {activeTab === "archived" && <ArchivedChatsSection />}
+        <div className="panel settings-panel">
+          {activeTab === "profile" && <ProfileSection />}
+          {activeTab === "security" && <SecuritySection />}
+          {activeTab === "archived" && <ArchivedChatsSection />}
+        </div>
+      </div>
     </div>
   );
 }
@@ -53,7 +59,11 @@ function ProfileSection() {
   const [saved, setSaved] = useState(false);
 
   const updateMutation = useMutation({
-    mutationFn: (input: { firstName: string; lastName: string; email: string }) => usersApi.updateProfile(input),
+    mutationFn: (input: {
+      firstName: string;
+      lastName: string;
+      email: string;
+    }) => usersApi.updateProfile(input),
     onSuccess: (updatedUser) => {
       refreshUser(updatedUser);
       setSaved(true);
@@ -61,7 +71,11 @@ function ProfileSection() {
     },
     onError: (err) => {
       setSaved(false);
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
     },
   });
 
@@ -74,40 +88,48 @@ function ProfileSection() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex gap-3">
-        <label className="flex flex-1 flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+        <label className="form-label">
           First name
           <input
             type="text"
             value={firstName}
             onChange={(event) => setFirstName(event.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            className="form-control"
           />
         </label>
-        <label className="flex flex-1 flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+        <label className="form-label">
           Last name
           <input
             type="text"
             value={lastName}
             onChange={(event) => setLastName(event.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            className="form-control"
           />
         </label>
       </div>
-      <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+      <label className="form-label">
         Email
         <input
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          className="form-control"
         />
       </label>
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-      {saved && !error && <p className="text-sm text-green-600 dark:text-green-400">Profile saved.</p>}
+      {error && (
+        <p role="alert" className="alert alert-danger">
+          {error}
+        </p>
+      )}
+      {saved && !error && (
+        <p role="status" className="alert alert-success">
+          Profile saved.
+        </p>
+      )}
       <button
         type="submit"
         disabled={updateMutation.isPending}
-        className="w-fit rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+        className="btn btn-primary w-fit"
       >
         {updateMutation.isPending ? "Saving…" : "Save profile"}
       </button>
@@ -123,7 +145,8 @@ function SecuritySection() {
   const [succeeded, setSucceeded] = useState(false);
 
   const changePasswordMutation = useMutation({
-    mutationFn: (input: { currentPassword: string; newPassword: string }) => usersApi.changePassword(input),
+    mutationFn: (input: { currentPassword: string; newPassword: string }) =>
+      usersApi.changePassword(input),
     onSuccess: () => {
       setSucceeded(true);
       setError(null);
@@ -133,7 +156,11 @@ function SecuritySection() {
     },
     onError: (err) => {
       setSucceeded(false);
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
     },
   });
 
@@ -150,17 +177,17 @@ function SecuritySection() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+      <label className="form-label">
         Current password
         <input
           type="password"
           required
           value={currentPassword}
           onChange={(event) => setCurrentPassword(event.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          className="form-control"
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+      <label className="form-label">
         New password
         <input
           type="password"
@@ -168,10 +195,10 @@ function SecuritySection() {
           minLength={8}
           value={newPassword}
           onChange={(event) => setNewPassword(event.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          className="form-control"
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+      <label className="form-label">
         Confirm new password
         <input
           type="password"
@@ -179,15 +206,23 @@ function SecuritySection() {
           minLength={8}
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          className="form-control"
         />
       </label>
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-      {succeeded && !error && <p className="text-sm text-green-600 dark:text-green-400">Password changed.</p>}
+      {error && (
+        <p role="alert" className="alert alert-danger">
+          {error}
+        </p>
+      )}
+      {succeeded && !error && (
+        <p role="status" className="alert alert-success">
+          Password changed.
+        </p>
+      )}
       <button
         type="submit"
         disabled={changePasswordMutation.isPending}
-        className="w-fit rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+        className="btn btn-primary w-fit"
       >
         {changePasswordMutation.isPending ? "Changing…" : "Change password"}
       </button>

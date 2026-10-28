@@ -1,0 +1,36 @@
+# Separate preview apps; does not replace rocky-backend or rocky-frontend.
+# Paths are relative to this manifest. See docs/clarity-deployment.md.
+version: 1
+applications:
+  - name: rocky-clarity-backend
+    path: ((backend-jar))
+    stack: ((stack))
+    buildpacks: [((java-buildpack))]
+    memory: ((backend-memory))
+    instances: 1
+    routes:
+      - route: ((backend-route))
+    health-check-type: http
+    health-check-http-endpoint: /actuator/health
+    timeout: ((startup-timeout))
+    env:
+      SPRING_PROFILES_ACTIVE: cloud
+      JBP_CONFIG_JAVA_CF_ENV: '{enabled: false}'
+      JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 25.+ } }'
+      APP_GENAI_CHAT_SERVICE: ((chat-service))
+      APP_GENAI_EMBEDDING_SERVICE: ((embed-service))
+      APP_GENAI_CHAT_TIMEOUT: ((chat-timeout))
+      APP_DOCUMENTS_INGESTION_CHUNK_SIZE: "((chunk-size))"
+      APP_CORS_ALLOWED_ORIGINS: https://((frontend-route))
+    services:
+      - ((db-service))
+      - ((chat-service))
+      - ((embed-service))
+  - name: rocky-clarity-frontend
+    path: ((frontend-dir))
+    stack: ((stack))
+    buildpacks: [((staticfile-buildpack))]
+    memory: 64M
+    instances: 1
+    routes:
+      - route: ((frontend-route))

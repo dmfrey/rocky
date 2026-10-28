@@ -84,6 +84,6 @@ the browser inside the lab.
 
 ## Progress tracking
 
-Planning is complete; frontend implementation has not started. Record each completed phase in
-the work log with the changed files, decisions, verification results, and remaining issues.
-The initial estimate is one to two working days, subject to CSS integration and visual feedback.
+The visual refresh is implemented, tested, and deployed to separate preview apps.
+Completed changes, test results, and remaining issues are recorded in the work log. See the
+[preview deployment guide](docs/clarity-deployment.md) for packaging and deployment commands.

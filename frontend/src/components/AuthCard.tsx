@@ -1,12 +1,34 @@
 import type { ReactNode } from "react";
+import { RockyMark } from "./Icon";
 
-export function AuthCard({ title, children }: { title: string; children: ReactNode }) {
+export function AuthCard({
+  title,
+  children,
+  wide = false,
+}: {
+  title: string;
+  children: ReactNode;
+  wide?: boolean;
+}) {
   return (
-    <div className="flex min-h-full items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
-      <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <h1 className="mb-6 text-center text-xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
-        {children}
-      </div>
+    <div className="auth-layout">
+      <header className="product-header">
+        <div className="product-brand">
+          <RockyMark />
+          <span>Rocky</span>
+        </div>
+        <span className="product-description">Knowledge workspace</span>
+      </header>
+      <main className="auth-main">
+        <div className={`auth-card ${wide ? "consent-card" : ""}`}>
+          <p className="eyebrow">ROCKY KNOWLEDGE WORKSPACE</p>
+          <h1>{title}</h1>
+          {children}
+        </div>
+      </main>
+      <footer className="auth-footer">
+        Answers grounded in your documents.
+      </footer>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import com.example.clientragdemo.ingestion.configuration.GenaiLocatorFactory;
 import com.example.clientragdemo.ingestion.configuration.GenaiModelSelector;
 import io.pivotal.cfenv.boot.genai.GenaiLocator;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -26,9 +27,23 @@ class GenaiModelConfiguration {
     @Bean
     @Primary
     ChatModel genaiChatModel(GenaiLocatorFactory locators, GenaiProperties properties) {
+        if (properties.chatTimeout() != null && !properties.chatTimeout().isPositive()) {
+            throw new IllegalArgumentException("app.genai.chat-timeout must be positive");
+        }
         GenaiLocator locator = locators.forService(properties.chatService());
         String name = GenaiModelSelector.select(properties.chatService(), "CHAT",
                 locator.getModelNamesByCapability("CHAT"), properties.chatModel());
-        return locator.getChatModelByName(name);
+        ChatModel model = locator.getChatModelByName(name);
+        if (properties.chatTimeout() == null) {
+            return model;
+        }
+        if (!(model instanceof OpenAiChatModel openAiModel)) {
+            throw new IllegalStateException("app.genai.chat-timeout requires an OpenAI-compatible chat model");
+        }
+        // DefaultGenaiLocator constructs the client directly, so Spring AI's auto-configuration
+        // timeout properties do not affect it. Retain the binding's model, URL, and credentials.
+        return OpenAiChatModel.builder()
+                .options(openAiModel.getOptions().mutate().timeout(properties.chatTimeout()).build())
+                .build();
     }
 }

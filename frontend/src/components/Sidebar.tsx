@@ -5,6 +5,7 @@ import { chatApi } from "../api/chat";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DropdownMenu, DropdownMenuItem } from "./DropdownMenu";
 import { UserMenu } from "./UserMenu";
+import { Icon } from "./Icon";
 import type { ChatSession } from "../api/types";
 
 export function Sidebar() {
@@ -12,7 +13,10 @@ export function Sidebar() {
   const location = useLocation();
   const queryClient = useQueryClient();
 
-  const sessionsQuery = useQuery({ queryKey: ["chats"], queryFn: () => chatApi.list(false) });
+  const sessionsQuery = useQuery({
+    queryKey: ["chats"],
+    queryFn: () => chatApi.list(false),
+  });
 
   const [renamingId, setRenamingId] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -27,7 +31,8 @@ export function Sidebar() {
   });
 
   const renameMutation = useMutation({
-    mutationFn: ({ id, title }: { id: number; title: string }) => chatApi.rename(id, title),
+    mutationFn: ({ id, title }: { id: number; title: string }) =>
+      chatApi.rename(id, title),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chats"] });
       setRenamingId(null);
@@ -63,7 +68,10 @@ export function Sidebar() {
     renameMutation.mutate({ id, title });
   }
 
-  function handleRenameKeyDown(event: KeyboardEvent<HTMLInputElement>, id: number) {
+  function handleRenameKeyDown(
+    event: KeyboardEvent<HTMLInputElement>,
+    id: number,
+  ) {
     if (event.key === "Enter") {
       event.preventDefault();
       commitRename(id);
@@ -74,30 +82,51 @@ export function Sidebar() {
   }
 
   const linkClasses = ({ isActive }: { isActive: boolean }) =>
-    `block rounded-md px-3 py-2 text-sm truncate ${
-      isActive
-        ? "bg-blue-50 font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
-        : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-    }`;
+    `navigation-link ${isActive ? "is-active" : ""}`;
 
   return (
-    <aside className="flex h-full w-64 flex-none flex-col border-r border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950">
-      <div className="p-3">
+    <aside className="sidebar" aria-label="Workspace">
+      <div className="sidebar-create">
         <button
           type="button"
           onClick={() => createChatMutation.mutate()}
           disabled={createChatMutation.isPending}
-          className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+          className="btn btn-primary w-full"
         >
-          + New chat
+          <Icon name="plus" size={16} /> New chat
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3">
+      <nav className="sidebar-links" aria-label="Workspace navigation">
+        <NavLink to="/" end className={linkClasses}>
+          <Icon name="chat" /> Overview
+        </NavLink>
+        <NavLink to="/documents" className={linkClasses}>
+          <Icon name="documents" /> Documents
+        </NavLink>
+        <NavLink to="/settings" className={linkClasses}>
+          <Icon name="settings" /> Settings
+        </NavLink>
+      </nav>
+      <div className="sidebar-section-label">Conversations</div>
+      <nav className="conversation-navigation" aria-label="Conversations">
+        {sessionsQuery.isLoading && (
+          <p className="sidebar-hint" role="status">
+            Loading conversations…
+          </p>
+        )}
+        {sessionsQuery.isError && (
+          <p className="sidebar-hint" role="alert">
+            Could not load conversations.
+          </p>
+        )}
+        {sessionsQuery.data?.length === 0 && (
+          <p className="sidebar-hint">Your conversations will appear here.</p>
+        )}
         <ul className="flex flex-col gap-0.5">
           {sessionsQuery.data?.map((session) =>
             renamingId === session.id ? (
-              <li key={session.id} className="px-3 py-2">
+              <li key={session.id} className="rename-row">
                 <input
                   autoFocus
                   value={renameValue}
@@ -105,29 +134,46 @@ export function Sidebar() {
                   onKeyDown={(event) => handleRenameKeyDown(event, session.id)}
                   onBlur={() => commitRename(session.id)}
                   onFocus={(event) => event.target.select()}
-                  className="w-full rounded border border-blue-400 bg-white px-1.5 py-0.5 text-sm text-gray-900 focus:outline-none dark:bg-gray-900 dark:text-gray-100"
+                  className="form-control"
+                  aria-label="Chat title"
                 />
               </li>
             ) : (
-              <li key={session.id} className="group flex items-center">
-                <NavLink to={`/chat/${session.id}`} className={`${linkClasses} min-w-0 flex-1`}>
+              <li key={session.id} className="conversation-row">
+                <NavLink
+                  to={`/chat/${session.id}`}
+                  className={({ isActive }) =>
+                    `conversation-link ${isActive ? "is-active" : ""}`
+                  }
+                >
                   {session.title ?? "New chat"}
                 </NavLink>
                 <DropdownMenu
-                  trigger={({ onClick }) => (
+                  trigger={({ onClick, open }) => (
                     <button
                       type="button"
                       onClick={onClick}
+                      aria-haspopup="menu"
+                      aria-expanded={open}
                       aria-label={`Options for ${session.title ?? "New chat"}`}
-                      className="rounded px-1.5 py-1 text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-gray-200 focus:opacity-100 dark:hover:bg-gray-800"
+                      className="icon-button conversation-options"
                     >
-                      ⋯
+                      <Icon name="more" size={18} />
                     </button>
                   )}
                 >
-                  <DropdownMenuItem onClick={() => startRename(session)}>Rename</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => archiveMutation.mutate(session.id)}>Archive</DropdownMenuItem>
-                  <DropdownMenuItem danger onClick={() => setPendingDelete(session)}>
+                  <DropdownMenuItem onClick={() => startRename(session)}>
+                    Rename
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => archiveMutation.mutate(session.id)}
+                  >
+                    Archive
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    danger
+                    onClick={() => setPendingDelete(session)}
+                  >
                     Delete
                   </DropdownMenuItem>
                 </DropdownMenu>
@@ -137,13 +183,15 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <div className="border-t border-gray-200 p-3 dark:border-gray-800">
-        <NavLink to="/documents" className={linkClasses}>
-          📄 Documents
-        </NavLink>
-      </div>
-
-      <div className="border-t border-gray-200 p-2 dark:border-gray-800">
+      {(createChatMutation.isError ||
+        renameMutation.isError ||
+        archiveMutation.isError ||
+        deleteMutation.isError) && (
+        <p className="sidebar-hint error-text" role="alert">
+          Could not update the conversation. Please try again.
+        </p>
+      )}
+      <div className="sidebar-account">
         <UserMenu />
       </div>
 

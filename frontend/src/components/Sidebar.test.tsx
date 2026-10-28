@@ -33,11 +33,13 @@ const session: ChatSession = {
   updatedAt: "2026-01-01T00:00:00Z",
 };
 
-function renderSidebar() {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function renderSidebar(path = "/") {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[path]}>
         <Sidebar />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -45,7 +47,11 @@ function renderSidebar() {
 }
 
 async function openMenuFor(name: string) {
-  await userEvent.click(screen.getByRole("button", { name: new RegExp(`options for ${name}`, "i") }));
+  await userEvent.click(
+    screen.getByRole("button", {
+      name: new RegExp(`options for ${name}`, "i"),
+    }),
+  );
 }
 
 beforeEach(() => {
@@ -54,7 +60,13 @@ beforeEach(() => {
   vi.mocked(chatApi.archive).mockResolvedValue({ ...session, archived: true });
   vi.mocked(chatApi.remove).mockResolvedValue(undefined);
   vi.mocked(useAuth).mockReturnValue({
-    user: { id: 1, username: "alice", firstName: null, lastName: null, email: null },
+    user: {
+      id: 1,
+      username: "alice",
+      firstName: null,
+      lastName: null,
+      email: null,
+    },
     isLoading: false,
     login: vi.fn(),
     register: vi.fn(),
@@ -75,7 +87,9 @@ describe("Sidebar chat session actions", () => {
     await userEvent.clear(input);
     await userEvent.type(input, "Renamed{Enter}");
 
-    await waitFor(() => expect(chatApi.rename).toHaveBeenCalledWith(1, "Renamed"));
+    await waitFor(() =>
+      expect(chatApi.rename).toHaveBeenCalledWith(1, "Renamed"),
+    );
   });
 
   it("cancels a rename on Escape without saving", async () => {
@@ -112,7 +126,9 @@ describe("Sidebar chat session actions", () => {
     const dialog = await screen.findByRole("alertdialog");
     expect(chatApi.remove).not.toHaveBeenCalled();
 
-    await userEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Delete" }),
+    );
 
     await waitFor(() => expect(chatApi.remove).toHaveBeenCalledWith(1));
   });
@@ -125,9 +141,18 @@ describe("Sidebar chat session actions", () => {
     await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
 
     const dialog = await screen.findByRole("alertdialog");
-    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Cancel" }),
+    );
 
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(chatApi.remove).not.toHaveBeenCalled();
   });
+});
+
+it("marks the selected conversation as the active navigation link", async () => {
+  renderSidebar("/chat/1");
+  const link = await screen.findByRole("link", { name: "Test chat" });
+  expect(link).toHaveAttribute("aria-current", "page");
+  expect(link).toHaveClass("is-active");
 });

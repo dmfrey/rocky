@@ -67,6 +67,8 @@ applications:
       # come from the same ((chat-service)) / ((embed-service)) variables as services: below, so
       # the binding and the app's lookup of it cannot disagree.
       APP_GENAI_CHAT_SERVICE: ((chat-service))
+      # Optional: increase the timeout for slower internal models (for example 300s).
+      # APP_GENAI_CHAT_TIMEOUT: ((chat-timeout))
       APP_GENAI_EMBEDDING_SERVICE: ((embed-service))
       # A service on an all-models plan is rejected as ambiguous at startup unless
       #   APP_GENAI_CHAT_MODEL / APP_GENAI_EMBEDDING_MODEL

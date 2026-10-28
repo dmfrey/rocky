@@ -27,7 +27,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const loginMutation = useMutation({
-    mutationFn: ({ username, password }: { username: string; password: string }) => authApi.login(username, password),
+    mutationFn: ({
+      username,
+      password,
+    }: {
+      username: string;
+      password: string;
+    }) => authApi.login(username, password),
     onSuccess: (user) => queryClient.setQueryData(ME_QUERY_KEY, user),
   });
 
@@ -37,7 +43,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: authApi.logout,
-    onSuccess: () => queryClient.setQueryData(ME_QUERY_KEY, null),
+    onSuccess: async () => {
+      // Logout invalidates the server session, including its consent acknowledgment.
+      // Discard the previous user's cached content and show the new session's notice.
+      await queryClient.cancelQueries();
+      queryClient.removeQueries({
+        predicate: (query) =>
+          !["auth", "banner"].includes(String(query.queryKey[0])),
+      });
+      queryClient.setQueryData(ME_QUERY_KEY, null);
+      await queryClient.resetQueries({ queryKey: ["banner"] });
+    },
   });
 
   const value: AuthContextValue = {
