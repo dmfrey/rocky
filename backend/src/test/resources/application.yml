@@ -34,7 +34,7 @@ spring:
 
   servlet:
     multipart:
-      # Deliberately much lower than production (application.yaml's 50MB) so
+      # Deliberately much lower than production (application.yaml's 100MB) so
       # DocumentControllerIT can verify the 413 rejection path without synthesizing a huge file.
       # Every other test upload is a small in-memory string, well under this.
       max-file-size: 100KB

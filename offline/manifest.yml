@@ -36,6 +36,10 @@ applications:
     buildpacks:
       - ((java-buildpack))
     memory: ((backend-memory))
+    # Uploads are accepted up to 100 MB. Tomcat spills a part past 2 MB to the JVM temp directory,
+    # which on CF is the container's writable layer and counts against this quota, so the default 1G
+    # (the jar alone is a large share of it) is not enough for a few concurrent large uploads.
+    disk_quota: ((backend-disk))
     instances: 1
     routes:
       - route: ((backend-route))

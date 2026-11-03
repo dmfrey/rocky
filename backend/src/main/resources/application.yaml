@@ -4,6 +4,14 @@ logging:
     org.springframework.web: info
     com.example.clientragdemo: debug
 
+server:
+  tomcat:
+    # When a request is refused for size, Tomcat keeps reading and discards up to this many bytes of
+    # the rest of the body so the client receives the 413; past it the connection is closed and the
+    # client sees a reset instead. Boot's 2MB default makes every oversized upload a reset. This is the
+    # 105MB request limit plus headroom.
+    max-swallow-size: 120MB
+
 spring:
   application:
     name: rocky
@@ -58,11 +66,16 @@ spring:
 
   servlet:
     multipart:
-      # Boot's defaults (1MB/10MB) reject most real PDFs/DOCX outright. 50MB comfortably covers
-      # realistic document uploads; MaxUploadSizeExceededException maps to 413 in
-      # GlobalExceptionHandler rather than the default 500.
-      max-file-size: 50MB
-      max-request-size: 50MB
+      # Boot's defaults (1MB/10MB) reject most real PDFs/DOCX outright. 100MB per file; the request
+      # limit leaves 5MB for the other form fields and multipart framing. MaxUploadSizeExceededException
+      # maps to 413 in GlobalExceptionHandler rather than the default 500.
+      max-file-size: 100MB
+      max-request-size: 105MB
+      # Tomcat spills a part to the container's temp dir past this size rather than holding it in memory.
+      file-size-threshold: 2MB
+      # Parse the request when the handler asks for the part, so an oversized body fails inside the
+      # handler and GlobalExceptionHandler answers it as a 413.
+      resolve-lazily: true
 
 management:
   endpoint:

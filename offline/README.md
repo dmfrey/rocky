@@ -93,13 +93,22 @@ $EDITOR vars.yml
 | `volume-service` | *(batch job, filesystem source only)* volume service name | the binding **and** the batch app's mount-path lookup |
 | `ingestion-source` | *(batch job only)* `filesystem` or `graph` | |
 | `chunk-size` | Document chunk size in tokens, shared by the backend and the batch job (`128` suits an embedding model with a 512-token limit; lower it if documents fail to embed with a "too many tokens" error) | |
-| `backend-memory` | Backend memory (`1500M`) | |
+| `backend-memory` | Backend memory (`1500M`). Raise it (`2500M` or more) before uploading documents near the 100 MB limit - see [Document uploads](#document-uploads) | |
+| `backend-disk` | Backend disk quota (`2G`): where Tomcat spills an upload while it arrives, on top of the jar | |
 | `batch-memory` | *(batch job only)* batch memory (`1500M`) | |
 | `stack` | *Optional* - when the foundation has several stacks (`cf stacks`); passed as `--stack` | |
 | `chat-timeout` | *Optional* - e.g. `300s`, for slow chat models; `deploy.sh` sets `APP_GENAI_CHAT_TIMEOUT` and restarts the backend. Unset keeps the library default | |
 | `startup-timeout` | Seconds CF waits for the backend to become healthy (`180`; a JVM start with database migrations is slow) | |
 
-**Upgrading an existing `vars.yml`:** add `backend-app: rocky-backend` and `frontend-app: rocky-frontend` (and `batch-app: rocky-sharepoint-batch` if you deploy the batch job); `preflight.sh` names any variable that is missing.
+### Document uploads
+
+The backend accepts document uploads up to **100 MB** per file. On Cloud Foundry that has three consequences, none of them in the application's own config:
+
+- **Memory.** Ingestion reads the whole file into the heap and Tika/PDFBox then parses it, so one 100 MB upload needs several hundred MB of heap at once, and a second concurrent one the same again. The default `backend-memory: 1500M` suits ordinary documents; raise it before uploading files near the limit.
+- **Disk.** Tomcat spills each part past 2 MB to the JVM temp directory, which is the container's writable layer and counts against `backend-disk`. Set `SPRING_SERVLET_MULTIPART_LOCATION` only if you mount somewhere else.
+- **The path in front.** Anything between the client and GoRouter - a load balancer, a WAF, a corporate proxy - may have its own request-body size limit or timeout. GoRouter sets no body limit itself; its request timeout is the foundation's (ask the platform operator). **This is untested against a real foundation.** An upload over the limit is answered `413`.
+
+**Upgrading an existing `vars.yml`:** add `backend-disk: 2G`, and `backend-app: rocky-backend` and `frontend-app: rocky-frontend` (and `batch-app: rocky-sharepoint-batch` if you deploy the batch job); `preflight.sh` names any variable that is missing.
 
 **A second copy** (e.g. a UI preview): keep one file per site, such as `vars.trevorputbrese.yml.example` (copy to `vars.<name>.yml`, gitignored), and run `VARS=vars.<name>.yml ./deploy.sh frontend-dist.tar.gz`. Use a different `frontend-dir` too. Sharing `db-service` shares users and documents.
 

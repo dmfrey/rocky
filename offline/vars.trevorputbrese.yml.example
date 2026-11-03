@@ -13,6 +13,7 @@ chat-timeout: 300s
 java-buildpack: java_buildpack_offline
 staticfile-buildpack: staticfile_buildpack
 backend-memory: 1500M
+backend-disk: 2G
 startup-timeout: 180
 chunk-size: "128"
 db-service: rocky-db

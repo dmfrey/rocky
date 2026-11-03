@@ -49,7 +49,13 @@ vision-service: ""
 # --- store). 128 suits an embedding model with a 512-token limit; lower it if documents fail to
 # --- embed with a "too many tokens" error. Memory suits the JVM apps' document parsing.
 chunk-size: "128"
+# --- Document upload accepts files up to 100 MB. Ingestion reads the whole file into the heap and Tika
+# --- or PDFBox then parses it, so a 100 MB upload needs several hundred MB of heap at once: 1500M is
+# --- for ordinary documents. If you will upload files near the limit, raise backend-memory (2500M or
+# --- more; the Java buildpack sizes the heap from it) - a second concurrent upload needs the same
+# --- again. backend-disk is where Tomcat spills each part while it arrives, on top of the jar.
 backend-memory: 1500M
+backend-disk: 2G
 startup-timeout: 180
 # --- OPTIONAL. Uncomment to set them; left out, the foundation's defaults apply.
 # stack: tanzucflinuxfs1   # when the foundation has several stacks (cf stacks); passed as --stack

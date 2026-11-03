@@ -127,7 +127,7 @@ export function DocumentsPage() {
             event.target.value = "";
           }}
         />
-        <p>Up to 50 MB per file. Images and scanned PDFs require a configured vision model.</p>
+        <p>Up to 100 MB per file. Images and scanned PDFs require a configured vision model.</p>
         {uploadsBlocked && (
           <p className="text-xs text-amber-700 dark:text-amber-400">
             {MAX_CONCURRENT_UPLOADS} uploads are already processing — wait for one to finish before adding more.
