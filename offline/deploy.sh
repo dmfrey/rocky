@@ -57,16 +57,25 @@ else
   echo
   echo "Batch job not deployed. Add it later with ./deploy.sh --with-batch (or set deploy-batch: true)."
 fi
-# Optional chat timeout for slow models: set with cf set-env (a manifest cannot leave an env var
-# unset), then picked up by the restart below if vision is enabled, or by one here if not.
-timeout=$(get_var chat-timeout)
-if [ -n "$timeout" ]; then
-  echo
-  echo "cf set-env $(get_var backend-app) APP_GENAI_CHAT_TIMEOUT $timeout"
-  if [ -z "$dry_run" ]; then
-    cf set-env "$(get_var backend-app)" APP_GENAI_CHAT_TIMEOUT "$timeout"
-    [ -n "$(get_var vision-service)" ] || cf restart "$(get_var backend-app)"
+# Optional backend tuning for the chat model: set with cf set-env (a manifest cannot leave an env
+# var unset), then picked up by the restart below if vision is enabled, or by one here if not.
+#   chat-timeout     -> APP_GENAI_CHAT_TIMEOUT       (slow models)
+#   retrieval-top-k  -> APP_CHAT_RETRIEVAL_TOP_K     (chunks given to the model per question)
+need_restart=
+for pair in chat-timeout:APP_GENAI_CHAT_TIMEOUT retrieval-top-k:APP_CHAT_RETRIEVAL_TOP_K; do
+  key=${pair%%:*}; env_name=${pair#*:}
+  value=$(get_var "$key")
+  if [ -n "$value" ]; then
+    echo
+    echo "cf set-env $(get_var backend-app) $env_name $value"
+    if [ -z "$dry_run" ]; then
+      cf set-env "$(get_var backend-app)" "$env_name" "$value"
+      need_restart=1
+    fi
   fi
+done
+if [ -n "$need_restart" ] && [ -z "$(get_var vision-service)" ]; then
+  cf restart "$(get_var backend-app)"
 fi
 # Optional vision model (images / scanned PDFs): bound with cf commands after the push, because a
 # manifest cannot bind a service conditionally. Skipped when vision-service is empty.

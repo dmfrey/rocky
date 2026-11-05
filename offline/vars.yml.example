@@ -60,6 +60,8 @@ startup-timeout: 180
 # --- OPTIONAL. Uncomment to set them; left out, the foundation's defaults apply.
 # stack: tanzucflinuxfs1   # when the foundation has several stacks (cf stacks); passed as --stack
 # chat-timeout: 300s       # for slow chat models; deploy.sh sets APP_GENAI_CHAT_TIMEOUT (default: the library's)
+# retrieval-top-k: 10      # chunks given to the chat model per question; deploy.sh sets APP_CHAT_RETRIEVAL_TOP_K
+#                          # (default 4). Raise it with the model's context window - see README "Tuning for the chat model"
 
 # ======================================================================================
 # --- Batch job (manifest-batch.yml): only used when deploy-batch is true / --with-batch.

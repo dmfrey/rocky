@@ -109,6 +109,13 @@ app:
       # agree exactly on the same text).
       chunk-size: 800
   chat:
+    retrieval:
+      # How many document chunks are retrieved and given to the chat model with each question
+      # (QuestionAnswerAdvisor's topK; Spring AI's own default is 4). Chunks are small
+      # (documents.ingestion.chunk-size, 128 tokens on Tanzu Platform), so 4 is only ~500 tokens of
+      # source text. Raise it via APP_CHAT_RETRIEVAL_TOP_K, together with the chat model's context
+      # window - the prompt is top-k x chunk-size + chat history (memory.max-messages) + the answer.
+      top-k: 4
     memory:
       # How many messages MessageWindowChatMemory keeps per conversation before evicting the
       # oldest ones from the database outright (see ChatConfiguration#chatMemory - Spring AI

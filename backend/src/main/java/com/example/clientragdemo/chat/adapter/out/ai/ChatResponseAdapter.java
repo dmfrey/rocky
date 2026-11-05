@@ -6,12 +6,14 @@ import com.example.clientragdemo.chat.application.domain.model.ChatStreamEvent.T
 import com.example.clientragdemo.chat.application.domain.model.Citation;
 import com.example.clientragdemo.chat.application.port.out.GenerateChatTitlePort;
 import com.example.clientragdemo.chat.application.port.out.StreamChatResponsePort;
+import com.example.clientragdemo.chat.configuration.ChatRetrievalProperties;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -30,9 +32,12 @@ class ChatResponseAdapter implements StreamChatResponsePort, GenerateChatTitlePo
     private final QuestionAnswerAdvisor questionAnswerAdvisor;
     private final MessageChatMemoryAdvisor messageChatMemoryAdvisor;
 
-    ChatResponseAdapter(ChatClient.Builder chatClientBuilder, VectorStore vectorStore, ChatMemory chatMemory) {
+    ChatResponseAdapter(ChatClient.Builder chatClientBuilder, VectorStore vectorStore, ChatMemory chatMemory,
+                        ChatRetrievalProperties retrievalProperties) {
         this.chatClient = chatClientBuilder.build();
-        this.questionAnswerAdvisor = QuestionAnswerAdvisor.builder(vectorStore).build();
+        this.questionAnswerAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
+                .searchRequest(SearchRequest.builder().topK(retrievalProperties.topK()).build())
+                .build();
         this.messageChatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
     }
 

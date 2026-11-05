@@ -98,7 +98,43 @@ $EDITOR vars.yml
 | `batch-memory` | *(batch job only)* batch memory (`1500M`) | |
 | `stack` | *Optional* - when the foundation has several stacks (`cf stacks`); passed as `--stack` | |
 | `chat-timeout` | *Optional* - e.g. `300s`, for slow chat models; `deploy.sh` sets `APP_GENAI_CHAT_TIMEOUT` and restarts the backend. Unset keeps the library default | |
+| `retrieval-top-k` | *Optional* - how many document chunks the chat model is given per question (default `4`); `deploy.sh` sets `APP_CHAT_RETRIEVAL_TOP_K` and restarts the backend. See [Tuning for the chat model](#tuning-for-the-chat-model) | |
 | `startup-timeout` | Seconds CF waits for the backend to become healthy (`180`; a JVM start with database migrations is slow) | |
+
+### Tuning for the chat model
+
+Answer quality depends on how much source text the chat model is shown, not only on which model it is. Each question
+retrieves `retrieval-top-k` chunks, and each chunk is at most `chunk-size` tokens, so the grounding is roughly
+`top-k x chunk-size` tokens. The defaults (`4` x `128`) give the model only ~500 tokens of source text, which starves
+even a large model. The whole prompt must still fit the model's context window:
+
+```
+prompt ~= top-k x chunk-size  +  chat history (up to 20 messages)  +  system prompt  +  the answer
+```
+
+| Chat model | `retrieval-top-k` | Needs a context window of |
+|---|---|---|
+| small (e.g. a 2B) | `4` (default) | 4k is enough |
+| Gemma 26B | `8` - `12` | **at least 8k**, 16k preferred |
+| GPT-OSS-120b | `10` - `16` | 16k or more |
+
+- **Context window is set on the serving side, not in Rocky** (the GenAI tile / the model server). If it is smaller than
+  the prompt above, the model truncates or rejects it: raise the window before raising `retrieval-top-k`.
+- **But bigger is not better.** When the tile serves models through Ollama, its *context length* is `num_ctx`, and Rocky
+  reaches Ollama through its OpenAI-compatible `/v1` routes, which cannot set it per request - the tile setting (or a
+  Modelfile `PARAMETER num_ctx`) is the only lever. Ollama reserves KV-cache memory for the *whole* context length when
+  the model loads, per parallel slot. A very large value (e.g. the tile's `131072` with an `f16` cache) can leave no GPU
+  room for the weights, and Ollama then offloads layers to the CPU: answers become very slow and `chat-timeout` is the
+  first symptom. Rocky needs about 8k-16k at `retrieval-top-k` 10.
+  - Check with `ollama ps` while the model is loaded: anything other than `100% GPU` is spilling to the CPU.
+  - If it is, lower the context length to 16384 (32768 at most).
+  - Set the KV cache type to `q8_0` instead of `f16`: it needs flash attention (already on) and roughly halves the cache.
+  - Keep parallel requests low (`OLLAMA_NUM_PARALLEL` 1-2): the cache is reserved for each slot.
+- `chunk-size` is capped by the embedding model (128 for a 512-token embedder). Changing it only affects documents
+  ingested afterwards - re-ingest them to benefit.
+- Larger models are slower: set `chat-timeout` (e.g. `300s`) before switching to GPT-OSS-120b or a non-quantized model.
+- If the chat service's plan grants several models, name one with `APP_GENAI_CHAT_MODEL`; the backend refuses to start
+  rather than guess.
 
 ### Document uploads
 
