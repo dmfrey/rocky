@@ -16,7 +16,12 @@ class OidcClientEnvironmentPostProcessorTest {
              "postgres":[{"name":"rocky-db","label":"postgres","credentials":{}}]}""";
 
     private static OidcClientEnvironmentPostProcessor processor(String vcapServices) {
-        return new OidcClientEnvironmentPostProcessor(() -> new CfEnv("{}", vcapServices));
+        // No discovery document reachable: the issuer falls back to <auth_domain>/oauth/token.
+        return processor(vcapServices, authDomain -> null);
+    }
+
+    private static OidcClientEnvironmentPostProcessor processor(String vcapServices, java.util.function.Function<String, String> issuerLookup) {
+        return new OidcClientEnvironmentPostProcessor(() -> new CfEnv("{}", vcapServices), issuerLookup);
     }
 
     private static StandardEnvironment environment(String... pairs) {
@@ -130,5 +135,31 @@ class OidcClientEnvironmentPostProcessorTest {
         processor(VCAP_SERVICES).postProcessEnvironment(environment, null);
 
         assertThat(environment.getProperty("spring.security.oauth2.client.provider.sso.user-name-attribute")).isEqualTo("user_name");
+    }
+
+    @Test
+    void takesTheIssuerFromTheDiscoveryDocumentNotFromTheAuthDomain() {
+        // On the real tile auth_domain is on the login. host but UAA reports its issuer on the uaa. host, and
+        // Spring Security rejects a registration whose requested issuer differs from the reported one.
+        StandardEnvironment environment = environment("app.auth.mode", "oidc");
+
+        processor(VCAP_SERVICES, authDomain -> {
+            assertThat(authDomain).isEqualTo("https://rocky.login.sys.example.com");
+            return "https://rocky.uaa.sys.example.com/oauth/token";
+        }).postProcessEnvironment(environment, null);
+
+        assertThat(environment.getProperty("spring.security.oauth2.client.provider.sso.issuer-uri"))
+                .isEqualTo("https://rocky.uaa.sys.example.com/oauth/token");
+    }
+
+    @Test
+    void anExplicitIssuerIsNotLookedUp() {
+        StandardEnvironment environment = environment("app.auth.mode", "oidc", "app.auth.oidc.issuer-uri", "https://issuer.example.com");
+
+        processor(VCAP_SERVICES, authDomain -> {
+            throw new AssertionError("must not call the network when the issuer is given");
+        }).postProcessEnvironment(environment, null);
+
+        assertThat(environment.getProperty("spring.security.oauth2.client.provider.sso.issuer-uri")).isEqualTo("https://issuer.example.com");
     }
 }

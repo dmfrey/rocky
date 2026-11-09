@@ -15,9 +15,9 @@
 # The redirect URIs are registered with the SSO service AT BIND TIME, so they must be right now:
 #   - https://<backend-route>/login/oauth2/code/sso   where the identity provider sends the browser back
 #   - https://<frontend-route>/                        where the browser lands after sign-in / sign-out
-# They default to the routes in vars.yml. sso-bind-params (a complete JSON object) replaces the whole
-# parameter set if your tile version names things differently - check `cf marketplace -e p-identity`
-# and the tile's documentation; the parameter names here are NOT verified against a tile.
+# They default to the routes in vars.yml, passed as the broker's required `redirect_uris` parameter (the plan
+# declares no parameter schema, so `cf marketplace` does not show it; the same form binds dmfrey/stig's
+# stig-sso). sso-bind-params (a complete JSON object) replaces the whole parameter set if you need more.
 #
 # To go back to local accounts:
 #   cf set-env <backend-app> APP_AUTH_MODE jdbc && cf restart <backend-app>
@@ -40,7 +40,7 @@ fi
 backend=$(get_var backend-app)
 params=$(get_var sso-bind-params)
 if [ -z "$params" ]; then
-  params="{\"redirect_uri\":[\"https://$(get_var backend-route)/login/oauth2/code/sso\",\"https://$(get_var frontend-route)/\"]}"
+  params="{\"redirect_uris\":[\"https://$(get_var backend-route)/login/oauth2/code/sso\",\"https://$(get_var frontend-route)/\"]}"
 fi
 
 echo "Binding $service to $backend with $params"

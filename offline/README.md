@@ -134,11 +134,12 @@ What `enable-sso.sh` does, and what to check if it does not work:
 
 - **Redirect URIs are registered at bind time.** It passes `https://<backend-route>/login/oauth2/code/sso` (where the identity
   provider sends the browser back) and `https://<frontend-route>/` (where it lands afterwards) as the binding's
-  `redirect_uri`. **That parameter name is not verified against a tile** - if the bind fails or sign-in ends with a
-  redirect-URI error, check the tile's documentation and give the whole parameter object in `sso-bind-params`.
+  `redirect_uris` - a parameter the broker requires but the plan does not list (`cf marketplace -e p-identity` shows none).
+  Give the whole parameter object in `sso-bind-params` if you need something else.
 - **The client credentials come from the binding** (`client_id`, `client_secret`, `auth_domain`), never from `vars.yml` or the
-  manifest. The issuer is taken as `<auth_domain>/oauth/token` (UAA's); `APP_AUTH_OIDC_ISSUER_URI` overrides it. The
-  username claim is `user_name`, which is what chats and documents are owned by.
+  manifest. The issuer is read from the discovery document at `auth_domain` - on this platform `auth_domain` is on the
+  `login.` host but UAA reports its issuer on the `uaa.` host, and the app must use the reported one;
+  `APP_AUTH_OIDC_ISSUER_URI` overrides it. The username claim is `user_name`, which is what chats and documents are owned by.
 - **A username that already belongs to a local account is refused** at SSO sign-in rather than linked (linking would let
   whoever holds that name at the identity provider take the local account over). This only matters when switching a
   deployment from `jdbc` to `oidc`: sign-in fails for those users until the local account is removed.
