@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { chatApi, sendMessageStream } from "../api/chat";
 import { Icon } from "../components/Icon";
+import { useStickToBottom } from "../hooks/useStickToBottom";
 import type { ChatMessage, Citation } from "../api/types";
 
 export function ChatPage() {
@@ -29,15 +30,25 @@ export function ChatPage() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
 
-  const bottomRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messagesQuery.data, streamingText, pendingUserMessage]);
+  // Follow the newest text as it streams in, anchored to the bottom of the transcript - see useStickToBottom.
+  const growth =
+    (messagesQuery.data?.length ?? 0) + (pendingUserMessage ? 1 : 0) + (isStreaming ? 1 : 0) + streamingText.length;
+  const { ref: scrollRef, onScroll, pin } = useStickToBottom<HTMLDivElement>(growth);
+
+  // The composer grows with what is typed (up to the CSS max-height) instead of scrolling a two-line box.
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const textarea = composerRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [input]);
 
   function submitMessage() {
     const content = input.trim();
     if (!content || isStreaming) return;
 
+    pin(); // sending is a request to see the answer: follow it even if the reader had scrolled up
     setInput("");
     setPendingUserMessage(content);
     setStreamingText("");
@@ -91,7 +102,7 @@ export function ChatPage() {
         </span>
       </div>
 
-      <div className="chat-scroll">
+      <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
         <div className="message-list">
           {messagesQuery.isLoading && (
             <p role="status" className="subtle-text">
@@ -139,19 +150,19 @@ export function ChatPage() {
               {streamError}
             </p>
           )}
-
-          <div ref={bottomRef} />
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="chat-composer">
         <div className="composer-input">
           <textarea
+            ref={composerRef}
             value={input}
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={handleKeyDown}
             aria-label="Message"
             rows={2}
+            wrap="soft"
             placeholder="Ask a question grounded in the uploaded documents…"
             className="composer-textarea"
           />

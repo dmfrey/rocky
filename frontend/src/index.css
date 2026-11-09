@@ -485,6 +485,9 @@ svg {
   margin-bottom: 12px;
 }
 .chat-composer {
+  /* Anchored to the bottom of the viewport: .chat-scroll above is the only part of the page that scrolls, and the
+     composer must never be squeezed out of view by a long transcript. */
+  flex-shrink: 0;
   padding: 16px 32px 20px;
   background: var(--surface);
   border-top: 1px solid var(--border);
@@ -507,7 +510,10 @@ svg {
 .composer-textarea {
   flex: 1;
   min-width: 0;
-  resize: vertical;
+  /* Long lines wrap inside the box (and a long unbroken string breaks) instead of scrolling sideways. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  resize: none;
   max-height: 180px;
   border: 0;
   background: transparent;
