@@ -1,5 +1,6 @@
 package com.example.clientragdemo.documents.adapter.in.endpoint;
 
+import com.example.clientragdemo.TestSessions;
 import com.example.clientragdemo.TestcontainersConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,10 +43,7 @@ class DocumentControllerIT {
         // BannerAckFilter gates /api/auth/register and /api/auth/login until this session has
         // acknowledged the consent banner (see SecurityConfig) - ack first and carry that
         // session's cookie through both calls.
-        ResponseEntity<Void> ackResponse = restTemplate.postForEntity("/api/banner/ack", null, Void.class);
-        String bannerCookie = ackResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
-        HttpHeaders bannerHeaders = new HttpHeaders();
-        bannerHeaders.add(HttpHeaders.COOKIE, bannerCookie);
+        HttpHeaders bannerHeaders = TestSessions.acknowledgedSession(restTemplate);
 
         AuthRequest credentials = new AuthRequest("doc-user-" + UUID.randomUUID(), "password123");
         restTemplate.postForEntity("/api/auth/register", new HttpEntity<>(credentials, bannerHeaders), Void.class);
@@ -54,9 +52,7 @@ class DocumentControllerIT {
 
         // Login doesn't always issue a new Set-Cookie - only when session-fixation protection
         // actually changes the session ID. Reuse the banner-ack cookie in that case.
-        String loginCookie = loginResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
-        authHeaders = new HttpHeaders();
-        authHeaders.add(HttpHeaders.COOKIE, (loginCookie != null) ? loginCookie : bannerCookie);
+        authHeaders = TestSessions.afterLogin(bannerHeaders, loginResponse);
     }
 
     @Test

@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: users-003-allow-passwordless-users
+      author: dfrey
+      comment: >
+        A user who signs in through single sign-on (app.auth.mode=oidc) has no password here - the identity
+        provider owns it. A row with a NULL password_hash is exactly that: an externally authenticated user,
+        which can never sign in with a local password.
+      changes:
+        - dropNotNullConstraint:
+            tableName: users
+            columnName: password_hash
+            columnDataType: varchar(255)

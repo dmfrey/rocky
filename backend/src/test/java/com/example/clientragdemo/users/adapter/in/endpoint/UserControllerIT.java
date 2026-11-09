@@ -7,6 +7,7 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import com.example.clientragdemo.TestSessions;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -84,12 +85,16 @@ class UserControllerIT {
 
     @Test
     void profileAndPasswordEndpointsRequireAuthentication() {
+        // A session with a valid CSRF token but nobody signed in: without the token these would be 403, and
+        // this test is about authentication, not CSRF.
+        HttpHeaders anonymous = TestSessions.acknowledgedSession(restTemplate);
+
         ResponseEntity<String> profileResponse = restTemplate.exchange(
-                "/api/users/me", HttpMethod.PATCH, new HttpEntity<>(new UpdateProfileRequest("A", "B", "a@b.com")), String.class);
+                "/api/users/me", HttpMethod.PATCH, new HttpEntity<>(new UpdateProfileRequest("A", "B", "a@b.com"), anonymous), String.class);
         assertThat(profileResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 
         ResponseEntity<String> passwordResponse = restTemplate.exchange(
-                "/api/users/me/password", HttpMethod.PUT, new HttpEntity<>(new ChangePasswordRequest("a", "newpassword123")), String.class);
+                "/api/users/me/password", HttpMethod.PUT, new HttpEntity<>(new ChangePasswordRequest("a", "newpassword123"), anonymous), String.class);
         assertThat(passwordResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
@@ -97,10 +102,7 @@ class UserControllerIT {
         // BannerAckFilter gates /api/auth/register and /api/auth/login until this session has
         // acknowledged the consent banner (see SecurityConfig) - ack first and carry that
         // session's cookie through both calls.
-        ResponseEntity<Void> ackResponse = restTemplate.postForEntity("/api/banner/ack", null, Void.class);
-        String bannerCookie = ackResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
-        HttpHeaders bannerHeaders = new HttpHeaders();
-        bannerHeaders.add(HttpHeaders.COOKIE, bannerCookie);
+        HttpHeaders bannerHeaders = TestSessions.acknowledgedSession(restTemplate);
 
         AuthRequest credentials = new AuthRequest(username, "password123");
         restTemplate.postForEntity("/api/auth/register", new HttpEntity<>(credentials, bannerHeaders), Void.class);
@@ -109,10 +111,7 @@ class UserControllerIT {
 
         // Login doesn't always issue a new Set-Cookie - only when session-fixation protection
         // actually changes the session ID. Reuse the banner-ack cookie in that case.
-        String loginCookie = loginResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.COOKIE, (loginCookie != null) ? loginCookie : bannerCookie);
-        return headers;
+        return TestSessions.afterLogin(bannerHeaders, loginResponse);
     }
 
     private record AuthRequest(String username, String password) {}

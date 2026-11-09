@@ -108,6 +108,28 @@ app:
       # whatever tokenizer that model actually enforces its limit with aren't guaranteed to
       # agree exactly on the same text).
       chunk-size: 800
+  auth:
+    # How users sign in (APP_AUTH_MODE): jdbc (default) - local username/password accounts in the users
+    # table; oidc - single sign-on through an OpenID Connect provider, normally the Tanzu SSO tile's
+    # service binding on Cloud Foundry, or plain settings anywhere else (see
+    # OidcClientEnvironmentPostProcessor and offline/enable-sso.sh). Exactly one is
+    # active. Any signed-in SSO user may use the app; there are no roles.
+    mode: jdbc
+    # jdbc only (APP_AUTH_REGISTRATION_ENABLED): whether anyone who can reach the app may create an account.
+    # True by default because a jdbc deployment has no other way to create its first account; switch it off
+    # once the accounts you need exist. oidc has no local registration at all.
+    registration-enabled: true
+    oidc:
+      # Cloud Foundry: the bound p-identity service instance (APP_AUTH_OIDC_SERVICE) supplies the client id,
+      # secret and issuer. Anywhere else (Kubernetes, ...) set APP_AUTH_OIDC_ISSUER_URI, APP_AUTH_OIDC_CLIENT_ID
+      # and APP_AUTH_OIDC_CLIENT_SECRET - any OpenID Connect compliant provider works; they also override the
+      # binding one by one. username-attribute is the claim that is the username (APP_AUTH_OIDC_USERNAME_ATTRIBUTE;
+      # user_name is UAA's, preferred_username is common elsewhere). success-url is where the browser lands after
+      # sign-in/out (default: the first app.cors.allowed-origins entry). Register
+      # <backend>/login/oauth2/code/<registration-id> with the provider as the redirect URI.
+      service: rocky-sso
+      registration-id: sso
+      username-attribute: user_name
   chat:
     retrieval:
       # How many document chunks are retrieved and given to the chat model with each question

@@ -36,6 +36,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-liquibase'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
+	// Optional OIDC sign-in (app.auth.mode=oidc) against the Tanzu SSO tile's service binding; inert in
+	// the default jdbc mode (no client registration -> no ClientRegistrationRepository bean).
+	implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-client'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 
 	// Spring AI dependencies

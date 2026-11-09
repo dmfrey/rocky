@@ -1,5 +1,6 @@
 package com.example.clientragdemo.users.adapter.in.endpoint;
 
+import com.example.clientragdemo.TestSessions;
 import com.example.clientragdemo.TestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,11 +38,8 @@ class AuthControllerIT {
         // consent banner - acknowledge first and carry that session's cookie through every call
         // below, the same way a real browser persists a session cookie across a request
         // sequence (TestRestTemplate doesn't do this automatically, unlike a browser).
-        ResponseEntity<Void> ackResponse = restTemplate.postForEntity("/api/banner/ack", null, Void.class);
-        assertThat(ackResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        String bannerCookie = ackResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
-        assertThat(bannerCookie).isNotNull();
-        HttpEntity<RegisterRequest> registerRequest = new HttpEntity<>(registration, cookieHeaders(bannerCookie));
+        HttpHeaders session = TestSessions.acknowledgedSession(restTemplate);
+        HttpEntity<RegisterRequest> registerRequest = new HttpEntity<>(registration, session);
 
         ResponseEntity<UserResponse> registerResponse = restTemplate.postForEntity("/api/auth/register", registerRequest, UserResponse.class);
         assertThat(registerResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -58,24 +56,17 @@ class AuthControllerIT {
         ResponseEntity<String> unauthenticatedMe = restTemplate.getForEntity("/api/auth/me", String.class);
         assertThat(unauthenticatedMe.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 
-        HttpEntity<AuthRequest> badLoginRequest = new HttpEntity<>(new AuthRequest(username, "wrong-password"), cookieHeaders(bannerCookie));
+        HttpEntity<AuthRequest> badLoginRequest = new HttpEntity<>(new AuthRequest(username, "wrong-password"), session);
         ResponseEntity<String> badLogin = restTemplate.postForEntity("/api/auth/login", badLoginRequest, String.class);
         assertThat(badLogin.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 
-        HttpEntity<AuthRequest> loginRequest = new HttpEntity<>(credentials, cookieHeaders(bannerCookie));
+        HttpEntity<AuthRequest> loginRequest = new HttpEntity<>(credentials, session);
         ResponseEntity<UserResponse> loginResponse = restTemplate.postForEntity("/api/auth/login", loginRequest, UserResponse.class);
         assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(loginResponse.getBody()).isNotNull();
         assertThat(loginResponse.getBody().username()).isEqualTo(username);
 
-        // Login doesn't always issue a new Set-Cookie - only when Spring Security's
-        // session-fixation protection actually changes the session ID, which it doesn't do on
-        // every request. Reuse the banner-ack cookie in that case; either way the banner-ack
-        // attribute is present on whichever session ID is now current.
-        String loginCookie = loginResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
-        String sessionCookie = (loginCookie != null) ? loginCookie : bannerCookie;
-
-        HttpEntity<Void> authenticatedRequest = new HttpEntity<>(cookieHeaders(sessionCookie));
+        HttpEntity<Void> authenticatedRequest = new HttpEntity<>(TestSessions.afterLogin(session, loginResponse));
         ResponseEntity<UserResponse> meResponse = restTemplate.exchange("/api/auth/me", HttpMethod.GET, authenticatedRequest, UserResponse.class);
         assertThat(meResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(meResponse.getBody()).isNotNull();
@@ -91,10 +82,37 @@ class AuthControllerIT {
         assertThat(meAfterLogout.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
-    private static HttpHeaders cookieHeaders(String sessionCookie) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.COOKIE, sessionCookie);
-        return headers;
+    @Test
+    void aMutatingRequestWithoutTheCsrfTokenIsRejected() {
+        HttpHeaders session = TestSessions.acknowledgedSession(restTemplate);
+        // The same session, but without the CSRF token header - what a cross-site form post looks like: the
+        // browser attaches the session cookie by itself, but the attacker's page cannot read the token.
+        HttpHeaders cookieOnly = new HttpHeaders();
+        cookieOnly.add(HttpHeaders.COOKIE, session.getFirst(HttpHeaders.COOKIE));
+        AuthRequest credentials = new AuthRequest("nobody-" + UUID.randomUUID(), "password123");
+
+        ResponseEntity<String> response = restTemplate.postForEntity("/api/auth/login", new HttpEntity<>(credentials, cookieOnly), String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void theCsrfTokenIsReachableBeforeTheBannerIsAcknowledged() {
+        // The banner acknowledgment is itself a POST that needs the token, so the token cannot sit behind it.
+        ResponseEntity<String> response = restTemplate.getForEntity("/api/csrf", String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).contains("headerName").contains("token");
+    }
+
+    @Test
+    void authConfigDescribesJdbcSignIn() {
+        HttpHeaders session = TestSessions.acknowledgedSession(restTemplate);
+
+        ResponseEntity<String> response = restTemplate.exchange("/api/auth/config", HttpMethod.GET, new HttpEntity<>(session), String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).contains("\"mode\":\"jdbc\"").contains("\"registrationEnabled\":true");
     }
 
     private record AuthRequest(String username, String password) {}

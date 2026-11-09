@@ -8,6 +8,7 @@ import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRe
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ByteArrayResource;
+import com.example.clientragdemo.TestSessions;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -279,10 +280,7 @@ class ChatControllerIT {
         // BannerAckFilter gates /api/auth/register and /api/auth/login until this session has
         // acknowledged the consent banner (see SecurityConfig) - ack first and carry that
         // session's cookie through both calls.
-        ResponseEntity<Void> ackResponse = restTemplate.postForEntity("/api/banner/ack", null, Void.class);
-        String bannerCookie = ackResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
-        HttpHeaders bannerHeaders = new HttpHeaders();
-        bannerHeaders.add(HttpHeaders.COOKIE, bannerCookie);
+        HttpHeaders bannerHeaders = TestSessions.acknowledgedSession(restTemplate);
 
         AuthRequest credentials = new AuthRequest(username, "password123");
         restTemplate.postForEntity("/api/auth/register", new HttpEntity<>(credentials, bannerHeaders), Void.class);
@@ -291,10 +289,7 @@ class ChatControllerIT {
 
         // Login doesn't always issue a new Set-Cookie - only when session-fixation protection
         // actually changes the session ID. Reuse the banner-ack cookie in that case.
-        String loginCookie = loginResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.COOKIE, (loginCookie != null) ? loginCookie : bannerCookie);
-        return headers;
+        return TestSessions.afterLogin(bannerHeaders, loginResponse);
     }
 
     private static ByteArrayResource namedResource(String filename, byte[] content) {

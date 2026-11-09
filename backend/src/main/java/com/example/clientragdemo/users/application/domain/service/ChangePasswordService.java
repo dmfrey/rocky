@@ -25,6 +25,9 @@ class ChangePasswordService implements ChangePasswordUseCase {
         User user = loadUserByUsernamePort.loadByUsername(command.username())
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + command.username()));
 
+        if (user.isExternallyAuthenticated()) {
+            throw new IllegalArgumentException("This account signs in through single sign-on and has no password here");
+        }
         if (!passwordEncoder.matches(command.currentPassword(), user.passwordHash())) {
             throw new IllegalArgumentException("Current password is incorrect");
         }

@@ -19,6 +19,7 @@ class UserDetailsServiceAdapter implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) {
         var user = loadUserByUsernamePort.loadByUsername(username)
+                .filter(found -> !found.isExternallyAuthenticated())
                 .orElseThrow(() -> new UsernameNotFoundException(username));
 
         return User.withUsername(user.username())

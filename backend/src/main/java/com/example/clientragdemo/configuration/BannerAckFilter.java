@@ -36,6 +36,10 @@ class BannerAckFilter extends OncePerRequestFilter {
 
     private static final String ERROR_PATH_PREFIX = "/error";
 
+    // The CSRF token has to be fetchable before the banner can be acknowledged: the acknowledgment is a
+    // POST, and every POST needs the token (see CsrfController).
+    private static final String CSRF_PATH = "/api/csrf";
+
     private static final int SC_PRECONDITION_REQUIRED = 428;
 
     private final BannerProperties properties;
@@ -66,7 +70,8 @@ class BannerAckFilter extends OncePerRequestFilter {
     private boolean isExempt(HttpServletRequest request) {
         String path = request.getRequestURI();
         if (path.startsWith(BANNER_PATH_PREFIX) || path.startsWith(ACTUATOR_HEALTH_PATH_PREFIX)
-                || path.startsWith(ACTUATOR_PROMETHEUS_PATH_PREFIX) || path.startsWith(ERROR_PATH_PREFIX)) {
+                || path.startsWith(ACTUATOR_PROMETHEUS_PATH_PREFIX) || path.startsWith(ERROR_PATH_PREFIX)
+                || path.equals(CSRF_PATH)) {
             return true;
         }
         return this.properties.exemptPathPrefixes().stream().anyMatch(path::startsWith);

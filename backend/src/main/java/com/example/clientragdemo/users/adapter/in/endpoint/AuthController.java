@@ -3,77 +3,26 @@ package com.example.clientragdemo.users.adapter.in.endpoint;
 import com.example.clientragdemo.users.application.domain.model.User;
 import com.example.clientragdemo.users.application.port.in.GetUserUseCase;
 import com.example.clientragdemo.users.application.port.in.GetUserUseCase.GetUserQuery;
-import com.example.clientragdemo.users.application.port.in.RegisterUserUseCase;
-import com.example.clientragdemo.users.application.port.in.RegisterUserUseCase.RegisterUserCommand;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/** The signed-in user, in either sign-in mode. Local login/registration live in their own controllers. */
 @RestController
 @RequestMapping("/api/auth")
 class AuthController {
 
-    private final RegisterUserUseCase registerUserUseCase;
     private final GetUserUseCase getUserUseCase;
-    private final AuthenticationManager authenticationManager;
-    private final SecurityContextRepository securityContextRepository;
 
-    AuthController(RegisterUserUseCase registerUserUseCase,
-                    GetUserUseCase getUserUseCase,
-                    AuthenticationManager authenticationManager,
-                    SecurityContextRepository securityContextRepository) {
-        this.registerUserUseCase = registerUserUseCase;
+    AuthController(GetUserUseCase getUserUseCase) {
         this.getUserUseCase = getUserUseCase;
-        this.authenticationManager = authenticationManager;
-        this.securityContextRepository = securityContextRepository;
-    }
-
-    @PostMapping("/register")
-    ResponseEntity<UserResponse> register(@RequestBody RegisterRequest request) {
-        User user = registerUserUseCase.execute(new RegisterUserCommand(
-                request.username(), request.password(), request.firstName(), request.lastName(), request.email()));
-        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(user));
-    }
-
-    @PostMapping("/login")
-    ResponseEntity<UserResponse> login(@RequestBody AuthRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
-        Authentication authenticationRequest = UsernamePasswordAuthenticationToken.unauthenticated(request.username(), request.password());
-        Authentication authenticationResult = authenticationManager.authenticate(authenticationRequest);
-
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authenticationResult);
-        SecurityContextHolder.setContext(context);
-        securityContextRepository.saveContext(context, httpRequest, httpResponse);
-
-        User user = getUserUseCase.execute(new GetUserQuery(authenticationResult.getName()));
-        return ResponseEntity.ok(toResponse(user));
     }
 
     @GetMapping("/me")
     ResponseEntity<UserResponse> me(Authentication authentication) {
         User user = getUserUseCase.execute(new GetUserQuery(authentication.getName()));
-        return ResponseEntity.ok(toResponse(user));
+        return ResponseEntity.ok(UserResponse.from(user));
     }
-
-    private static UserResponse toResponse(User user) {
-        return new UserResponse(user.id(), user.username(), user.firstName(), user.lastName(), user.email());
-    }
-
-    record AuthRequest(String username, String password) {}
-
-    record RegisterRequest(String username, String password, String firstName, String lastName, String email) {}
-
-    record UserResponse(Long id, String username, String firstName, String lastName, String email) {}
 }
