@@ -131,6 +131,11 @@ app:
       registration-id: sso
       username-attribute: user_name
   chat:
+    # The chat model is small or slow (e.g. CPU-only models in an offline lab): APP_CHAT_LIMITED_MODEL=true cuts
+    # every part of a chat that costs model time - 3 retrieved chunks (each labelled with its document id), answers
+    # limited to 4 bullets / 100 words / one cited document id, 6 messages of history, 200 output tokens, and a title
+    # taken from the first words of the message instead of a second model call. See ChatModeProperties.
+    limited-model: false
     retrieval:
       # How many document chunks are retrieved and given to the chat model with each question
       # (QuestionAnswerAdvisor's topK; Spring AI's own default is 4). Chunks are small

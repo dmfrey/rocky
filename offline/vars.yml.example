@@ -65,6 +65,9 @@ startup-timeout: 180
 # registration-enabled: true  # jdbc only: may anyone who can reach the app create an account? Set false once the
 #                             # accounts you need exist - there is no other way to add one. oidc has no registration.
 # sso-bind-params: '{"redirect_uris":["https://rocky-backend.apps.example.com/login/oauth2/code/sso"]}'  # override the bind parameters
+# limited-model: true     # slow / CPU-only chat model: 3 chunks, answers of at most 4 bullets / 100 words citing one document id,
+#                         # 6 messages of history, 200 output tokens, title from the first words; deploy.sh sets
+#                         # APP_CHAT_LIMITED_MODEL - see README "Limited-model mode". Overrides retrieval-top-k (3 at most).
 # retrieval-top-k: 10      # chunks given to the chat model per question; deploy.sh sets APP_CHAT_RETRIEVAL_TOP_K
 #                          # (default 4). Raise it with the model's context window - see README "Tuning for the chat model"
 

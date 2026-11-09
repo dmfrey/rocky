@@ -62,10 +62,11 @@ fi
 #   chat-timeout     -> APP_GENAI_CHAT_TIMEOUT       (slow models)
 #   retrieval-top-k  -> APP_CHAT_RETRIEVAL_TOP_K     (chunks given to the model per question)
 need_restart=
+#   limited-model        -> APP_CHAT_LIMITED_MODEL       (slow/CPU-only chat model: smaller prompts and answers)
 #   registration-enabled -> APP_AUTH_REGISTRATION_ENABLED (local accounts, jdbc mode only)
 # auth-mode oidc is applied by enable-sso.sh below (it binds the SSO service and restarts); an explicit
 # auth-mode jdbc is set here so a deployment switched back from SSO really does go back.
-for pair in chat-timeout:APP_GENAI_CHAT_TIMEOUT retrieval-top-k:APP_CHAT_RETRIEVAL_TOP_K registration-enabled:APP_AUTH_REGISTRATION_ENABLED; do
+for pair in chat-timeout:APP_GENAI_CHAT_TIMEOUT retrieval-top-k:APP_CHAT_RETRIEVAL_TOP_K limited-model:APP_CHAT_LIMITED_MODEL registration-enabled:APP_AUTH_REGISTRATION_ENABLED; do
   key=${pair%%:*}; env_name=${pair#*:}
   value=$(get_var "$key")
   if [ -n "$value" ]; then

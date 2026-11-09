@@ -12,7 +12,7 @@ import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories;
 @Configuration
 @ComponentScan(basePackages = "com.example.clientragdemo.chat")
 @EnableJdbcRepositories(basePackages = "com.example.clientragdemo.chat.adapter.out.persistence")
-@EnableConfigurationProperties({ChatMemoryProperties.class, ChatRetrievalProperties.class})
+@EnableConfigurationProperties({ChatMemoryProperties.class, ChatRetrievalProperties.class, ChatModeProperties.class})
 class ChatConfiguration {
 
     // Overrides Spring AI's ChatMemoryAutoConfiguration#chatMemory, which is
@@ -21,10 +21,14 @@ class ChatConfiguration {
     // auto-configured default backs off), now driven by ChatMemoryProperties instead of a
     // hardcoded number here.
     @Bean
-    ChatMemory chatMemory(ChatMemoryRepository chatMemoryRepository, ChatMemoryProperties chatMemoryProperties) {
+    ChatMemory chatMemory(ChatMemoryRepository chatMemoryRepository, ChatMemoryProperties chatMemoryProperties,
+                          ChatModeProperties chatModeProperties) {
+        int maxMessages = chatModeProperties.limitedModel()
+                ? Math.min(chatMemoryProperties.maxMessages(), ChatModeProperties.MEMORY_MAX_MESSAGES)
+                : chatMemoryProperties.maxMessages();
         return MessageWindowChatMemory.builder()
                 .chatMemoryRepository(chatMemoryRepository)
-                .maxMessages(chatMemoryProperties.maxMessages())
+                .maxMessages(maxMessages)
                 .build();
     }
 }

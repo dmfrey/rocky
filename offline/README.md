@@ -104,11 +104,30 @@ $EDITOR vars.yml
 | `stack` | *Optional* - when the foundation has several stacks (`cf stacks`); passed as `--stack` | |
 | `chat-timeout` | *Optional* - e.g. `300s`, for slow chat models; `deploy.sh` sets `APP_GENAI_CHAT_TIMEOUT` and restarts the backend. Unset keeps the library default | |
 | `retrieval-top-k` | *Optional* - how many document chunks the chat model is given per question (default `4`); `deploy.sh` sets `APP_CHAT_RETRIEVAL_TOP_K` and restarts the backend. See [Tuning for the chat model](#tuning-for-the-chat-model) | |
+| `limited-model` | *Optional* - `true` when the chat model is small or CPU-only; `deploy.sh` sets `APP_CHAT_LIMITED_MODEL` and restarts the backend. See [Limited-model mode](#limited-model-mode) | |
 | `auth-mode` | *Optional* - `jdbc` (default, local accounts) or `oidc` (Tanzu SSO); see [Sign-in](#sign-in) | |
 | `sso-service` | *(auth-mode oidc)* the `p-identity` service instance to bind | the binding **and** the backend's lookup of it |
 | `sso-bind-params` | *Optional (oidc)* - the full JSON of bind parameters, replacing the default redirect URIs | |
 | `registration-enabled` | *Optional (jdbc)* - `false` removes the self-registration endpoint; default `true` | |
 | `startup-timeout` | Seconds CF waits for the backend to become healthy (`180`; a JVM start with database migrations is slow) | |
+
+### Limited-model mode
+
+On CPU-only models, reading a long prompt and generating tokens are both slow. `limited-model: true` (the
+`APP_CHAT_LIMITED_MODEL` switch) cuts every part of a chat that costs model time, at once:
+
+| | Normal | `limited-model: true` |
+|---|---|---|
+| Chunks retrieved per question | `retrieval-top-k` (4) | **3** (the smaller of the two), set in the search itself - not left to the model |
+| What the model is told | nothing extra | every answer: at most 4 bullets, under 100 words, one document id cited (each chunk is labelled `[document 42: file.pdf]` so it can) |
+| Chat history in each prompt | up to 20 messages | **6** |
+| Answer length | the model's own | capped at **200** tokens |
+| A new chat's title | a second model call | the first six words of the message |
+
+These figures are fixed, not settings. Two limits worth knowing: the style instruction is a request, so how well it is
+followed depends on the model (the 200-token cap is what actually bounds a long answer - it can cut a sentence off), and
+the cited id is the model's own claim - the sources the UI lists next to an answer are the retrieved chunks and are not
+affected. Off by default; set `limited-model: false` and redeploy to go back.
 
 ### Sign-in
 
@@ -154,6 +173,9 @@ Both modes protect state-changing requests against cross-site request forgery wi
 `/api/csrf` and sends in a header; this is built in and needs no setting.
 
 ### Tuning for the chat model
+
+*This section is for models with room to spare. On a slow or CPU-only model go the other way: set `limited-model: true`
+(see [Limited-model mode](#limited-model-mode)), which caps retrieval at 3 chunks whatever `retrieval-top-k` says.*
 
 Answer quality depends on how much source text the chat model is shown, not only on which model it is. Each question
 retrieves `retrieval-top-k` chunks, and each chunk is at most `chunk-size` tokens, so the grounding is roughly
@@ -206,7 +228,7 @@ The backend accepts document uploads up to **100 MB** per file. On Cloud Foundry
 - **Disk.** Tomcat spills each part past 2 MB to the JVM temp directory, which is the container's writable layer and counts against `backend-disk`. Set `SPRING_SERVLET_MULTIPART_LOCATION` only if you mount somewhere else.
 - **The path in front.** Anything between the client and GoRouter - a load balancer, a WAF, a corporate proxy - may have its own request-body size limit or timeout. GoRouter sets no body limit itself; its request timeout is the foundation's (ask the platform operator). **This is untested against a real foundation.** An upload over the limit is answered `413`.
 
-**Upgrading an existing deployment:** deploy the backend jar and the frontend bundle together (see above). The new settings (`auth-mode`, `sso-service`, `sso-bind-params`, `registration-enabled`, `retrieval-top-k`) are all optional, so an existing `vars.yml` keeps working and sign-in stays local accounts.
+**Upgrading an existing deployment:** deploy the backend jar and the frontend bundle together (see above). The new settings (`auth-mode`, `sso-service`, `sso-bind-params`, `registration-enabled`, `retrieval-top-k`, `limited-model`) are all optional, so an existing `vars.yml` keeps working and sign-in stays local accounts.
 
 **Upgrading an existing `vars.yml`:** add `backend-disk: 2G`, and `backend-app: rocky-backend` and `frontend-app: rocky-frontend` (and `batch-app: rocky-sharepoint-batch` if you deploy the batch job); `preflight.sh` names any variable that is missing.
 

@@ -6,12 +6,14 @@ import com.example.clientragdemo.chat.application.domain.model.ChatStreamEvent.T
 import com.example.clientragdemo.chat.application.domain.model.Citation;
 import com.example.clientragdemo.chat.application.port.out.GenerateChatTitlePort;
 import com.example.clientragdemo.chat.application.port.out.StreamChatResponsePort;
+import com.example.clientragdemo.chat.configuration.ChatModeProperties;
 import com.example.clientragdemo.chat.configuration.ChatRetrievalProperties;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -29,21 +31,30 @@ class ChatResponseAdapter implements StreamChatResponsePort, GenerateChatTitlePo
             Respond with the title text only - no quotes, no punctuation at the end, no explanation.""";
 
     private final ChatClient chatClient;
+    private final boolean limitedModel;
     private final QuestionAnswerAdvisor questionAnswerAdvisor;
     private final MessageChatMemoryAdvisor messageChatMemoryAdvisor;
 
     ChatResponseAdapter(ChatClient.Builder chatClientBuilder, VectorStore vectorStore, ChatMemory chatMemory,
-                        ChatRetrievalProperties retrievalProperties) {
+                        ChatRetrievalProperties retrievalProperties, ChatModeProperties modeProperties) {
         this.chatClient = chatClientBuilder.build();
-        this.questionAnswerAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
-                .searchRequest(SearchRequest.builder().topK(retrievalProperties.topK()).build())
+        this.limitedModel = modeProperties.limitedModel();
+        // Limited-model mode (see ChatModeProperties): fewer chunks, and each one labelled with its document id.
+        int topK = limitedModel ? Math.min(retrievalProperties.topK(), ChatModeProperties.RETRIEVAL_TOP_K) : retrievalProperties.topK();
+        this.questionAnswerAdvisor = QuestionAnswerAdvisor.builder(limitedModel ? new DocumentLabelingVectorStore(vectorStore) : vectorStore)
+                .searchRequest(SearchRequest.builder().topK(topK).build())
                 .build();
         this.messageChatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
     }
 
     @Override
     public Flux<ChatStreamEvent> stream(Long sessionId, String userMessage) {
-        Flux<ChatClientResponse> responses = chatClient.prompt()
+        ChatClient.ChatClientRequestSpec prompt = chatClient.prompt();
+        if (limitedModel) {
+            prompt = prompt.system(ChatModeProperties.ANSWER_INSTRUCTION)
+                    .options(ChatOptions.builder().maxTokens(ChatModeProperties.MAX_OUTPUT_TOKENS));
+        }
+        Flux<ChatClientResponse> responses = prompt
                 .user(userMessage)
                 .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, sessionId.toString()))
                 .advisors(messageChatMemoryAdvisor, questionAnswerAdvisor)
@@ -63,6 +74,10 @@ class ChatResponseAdapter implements StreamChatResponsePort, GenerateChatTitlePo
 
     @Override
     public String generateTitle(String firstUserMessage) {
+        if (limitedModel) {
+            // A separate model call just to name the chat is a whole extra generation on a slow model.
+            return fallbackTitle(firstUserMessage);
+        }
         String title = chatClient.prompt()
                 .system(TITLE_SYSTEM_PROMPT)
                 .user(firstUserMessage)
@@ -75,6 +90,16 @@ class ChatResponseAdapter implements StreamChatResponsePort, GenerateChatTitlePo
 
         String trimmed = title.strip().replaceAll("^\"|\"$", "");
         return trimmed.length() > 100 ? trimmed.substring(0, 100) : trimmed;
+    }
+
+    /** The first few words of the message, for when a model call to title the chat is not worth its cost. */
+    static String fallbackTitle(String firstUserMessage) {
+        if (firstUserMessage == null || firstUserMessage.isBlank()) {
+            return "New chat";
+        }
+        String[] words = firstUserMessage.strip().split("\\s+");
+        String title = String.join(" ", java.util.Arrays.copyOf(words, Math.min(words.length, 6)));
+        return title.length() > 60 ? title.substring(0, 60).stripTrailing() : title;
     }
 
     private static void captureSources(ChatClientResponse response, AtomicReference<List<Citation>> sourcesRef) {
