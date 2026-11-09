@@ -62,7 +62,10 @@ fi
 #   chat-timeout     -> APP_GENAI_CHAT_TIMEOUT       (slow models)
 #   retrieval-top-k  -> APP_CHAT_RETRIEVAL_TOP_K     (chunks given to the model per question)
 need_restart=
-for pair in chat-timeout:APP_GENAI_CHAT_TIMEOUT retrieval-top-k:APP_CHAT_RETRIEVAL_TOP_K; do
+#   registration-enabled -> APP_AUTH_REGISTRATION_ENABLED (local accounts, jdbc mode only)
+# auth-mode oidc is applied by enable-sso.sh below (it binds the SSO service and restarts); an explicit
+# auth-mode jdbc is set here so a deployment switched back from SSO really does go back.
+for pair in chat-timeout:APP_GENAI_CHAT_TIMEOUT retrieval-top-k:APP_CHAT_RETRIEVAL_TOP_K registration-enabled:APP_AUTH_REGISTRATION_ENABLED; do
   key=${pair%%:*}; env_name=${pair#*:}
   value=$(get_var "$key")
   if [ -n "$value" ]; then
@@ -74,8 +77,27 @@ for pair in chat-timeout:APP_GENAI_CHAT_TIMEOUT retrieval-top-k:APP_CHAT_RETRIEV
     fi
   fi
 done
-if [ -n "$need_restart" ] && [ -z "$(get_var vision-service)" ]; then
+if [ "$(get_var auth-mode)" = "jdbc" ]; then
+  echo
+  echo "cf set-env $(get_var backend-app) APP_AUTH_MODE jdbc"
+  if [ -z "$dry_run" ]; then
+    cf set-env "$(get_var backend-app)" APP_AUTH_MODE jdbc
+    need_restart=1
+  fi
+fi
+# enable-vision.sh and enable-sso.sh each restart the backend themselves.
+if [ -n "$need_restart" ] && [ -z "$(get_var vision-service)" ] && [ "$(get_var auth-mode)" != "oidc" ]; then
   cf restart "$(get_var backend-app)"
+fi
+# Single sign-on (Tanzu SSO tile): bound with cf commands after the push, like vision. Skipped unless
+# auth-mode is oidc.
+if [ "$(get_var auth-mode)" = "oidc" ]; then
+  echo
+  if [ -n "$dry_run" ]; then
+    echo "bash ./enable-sso.sh   (binds $(get_var sso-service), selects oidc mode and restarts the backend)"
+  else
+    bash ./enable-sso.sh
+  fi
 fi
 # Optional vision model (images / scanned PDFs): bound with cf commands after the push, because a
 # manifest cannot bind a service conditionally. Skipped when vision-service is empty.

@@ -99,7 +99,53 @@ $EDITOR vars.yml
 | `stack` | *Optional* - when the foundation has several stacks (`cf stacks`); passed as `--stack` | |
 | `chat-timeout` | *Optional* - e.g. `300s`, for slow chat models; `deploy.sh` sets `APP_GENAI_CHAT_TIMEOUT` and restarts the backend. Unset keeps the library default | |
 | `retrieval-top-k` | *Optional* - how many document chunks the chat model is given per question (default `4`); `deploy.sh` sets `APP_CHAT_RETRIEVAL_TOP_K` and restarts the backend. See [Tuning for the chat model](#tuning-for-the-chat-model) | |
+| `auth-mode` | *Optional* - `jdbc` (default, local accounts) or `oidc` (Tanzu SSO); see [Sign-in](#sign-in) | |
+| `sso-service` | *(auth-mode oidc)* the `p-identity` service instance to bind | the binding **and** the backend's lookup of it |
+| `sso-bind-params` | *Optional (oidc)* - the full JSON of bind parameters, replacing the default redirect URIs | |
+| `registration-enabled` | *Optional (jdbc)* - `false` removes the self-registration endpoint; default `true` | |
 | `startup-timeout` | Seconds CF waits for the backend to become healthy (`180`; a JVM start with database migrations is slow) | |
+
+### Sign-in
+
+`auth-mode` in `vars.yml` picks how people sign in - exactly one of:
+
+- **`jdbc`** (the default): local accounts in Rocky's own database. The sign-in page has a registration form. **Anyone who can
+  reach the app can create an account**, and there is no other way to add one, so set `registration-enabled: false`
+  once the accounts you need exist (the registration endpoint is then absent, not merely refusing).
+- **`oidc`**: single sign-on with the **Tanzu SSO tile**. Create the service once
+  (`cf create-service p-identity <plan> rocky-sso` - the plans are in `cf marketplace -e p-identity`; the identity
+  provider behind it, LDAP or Active Directory, is the tile's concern) and set `auth-mode: oidc` and `sso-service`.
+  `deploy.sh` then runs `enable-sso.sh`, which binds the service to the backend, selects oidc mode and restarts it.
+  Any user the identity provider signs in may use Rocky - there are no roles. There are no local accounts: no
+  registration, no password form, no password change. A user's first sign-in creates their profile row.
+
+OIDC is not specific to Cloud Foundry. Anywhere else (Kubernetes, a laptop) set `APP_AUTH_MODE=oidc` plus
+`APP_AUTH_OIDC_ISSUER_URI`, `APP_AUTH_OIDC_CLIENT_ID` and `APP_AUTH_OIDC_CLIENT_SECRET` for any OpenID Connect compliant
+provider, and `APP_AUTH_OIDC_USERNAME_ATTRIBUTE` if its username claim is not UAA's `user_name` (`preferred_username` is
+common). Register `https://<backend>/login/oauth2/code/sso` with the provider as the redirect URI. On Cloud Foundry the
+bound SSO service supplies all of it instead; the plain settings, if given, override the binding one by one.
+
+What `enable-sso.sh` does, and what to check if it does not work:
+
+- **Redirect URIs are registered at bind time.** It passes `https://<backend-route>/login/oauth2/code/sso` (where the identity
+  provider sends the browser back) and `https://<frontend-route>/` (where it lands afterwards) as the binding's
+  `redirect_uri`. **That parameter name is not verified against a tile** - if the bind fails or sign-in ends with a
+  redirect-URI error, check the tile's documentation and give the whole parameter object in `sso-bind-params`.
+- **The client credentials come from the binding** (`client_id`, `client_secret`, `auth_domain`), never from `vars.yml` or the
+  manifest. The issuer is taken as `<auth_domain>/oauth/token` (UAA's); `APP_AUTH_OIDC_ISSUER_URI` overrides it. The
+  username claim is `user_name`, which is what chats and documents are owned by.
+- **A username that already belongs to a local account is refused** at SSO sign-in rather than linked (linking would let
+  whoever holds that name at the identity provider take the local account over). This only matters when switching a
+  deployment from `jdbc` to `oidc`: sign-in fails for those users until the local account is removed.
+- **Sign-out** ends the identity provider's session too when it publishes an end-session endpoint (UAA does); the
+  post-logout redirect has to be one of the binding's redirect URIs, which is why the frontend URL is included.
+- **A failed sign-in** returns the browser to the frontend with a message, and the real reason is in the backend log
+  (`SSO sign-in failed: ...`).
+- To go back to local accounts: `cf set-env <backend-app> APP_AUTH_MODE jdbc && cf restart <backend-app>` (or set
+  `auth-mode: jdbc` and run `deploy.sh`). A user created through SSO has no password and cannot sign in locally.
+
+Both modes protect state-changing requests against cross-site request forgery with a token the frontend fetches from
+`/api/csrf` and sends in a header; this is built in and needs no setting.
 
 ### Tuning for the chat model
 

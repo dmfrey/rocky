@@ -104,6 +104,16 @@ else
   else
     echo "  info  vision: off (set vision-service in vars.yml to read images and scanned PDFs)"
   fi
+  case "$(get_var auth-mode)" in
+    oidc)
+      if [ -n "$(get_var sso-service)" ]; then
+        check_service sso-service "the Tanzu SSO service (p-identity) the backend signs in with"
+      else
+        fail "auth-mode is oidc but sso-service is not set"
+      fi ;;
+    ""|jdbc) echo "  info  sign-in: local accounts (set auth-mode: oidc and sso-service in vars.yml for Tanzu SSO)" ;;
+    *) fail "auth-mode '$(get_var auth-mode)' is not jdbc or oidc" ;;
+  esac
   if [ "$batch" = true ] && [ "$(get_var ingestion-source)" = "filesystem" ]; then
     check_service volume-service "the document volume"
   fi

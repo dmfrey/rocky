@@ -60,6 +60,11 @@ startup-timeout: 180
 # --- OPTIONAL. Uncomment to set them; left out, the foundation's defaults apply.
 # stack: tanzucflinuxfs1   # when the foundation has several stacks (cf stacks); passed as --stack
 # chat-timeout: 300s       # for slow chat models; deploy.sh sets APP_GENAI_CHAT_TIMEOUT (default: the library's)
+# auth-mode: jdbc         # jdbc (default: local accounts) or oidc (Tanzu SSO). oidc needs sso-service and runs enable-sso.sh
+# sso-service: rocky-sso  # the p-identity service instance (cf create-service p-identity <plan> rocky-sso)
+# registration-enabled: true  # jdbc only: may anyone who can reach the app create an account? Set false once the
+#                             # accounts you need exist - there is no other way to add one. oidc has no registration.
+# sso-bind-params: '{"redirect_uri":["https://rocky-backend.apps.example.com/login/oauth2/code/sso"]}'  # override the bind parameters
 # retrieval-top-k: 10      # chunks given to the chat model per question; deploy.sh sets APP_CHAT_RETRIEVAL_TOP_K
 #                          # (default 4). Raise it with the model's context window - see README "Tuning for the chat model"
 
