@@ -16,6 +16,7 @@ fill in `vars.yml`, and run `./deploy.sh`.
 | `preflight.sh` | Checks vars, files, buildpacks, services and route domains before you push (read-only). |
 | `prepare-frontend.sh` | Extracts the frontend bundle and points it at your backend route. |
 | `enable-vision.sh` | Optional: binds the `vision-service` model (images / scanned PDFs). `deploy.sh` runs it when `vision-service` is set. |
+| `enable-sso.sh` | Optional: binds the Tanzu SSO service (`sso-service`) and switches the backend to single sign-on. `deploy.sh` runs it when `auth-mode` is `oidc`. See [Sign-in](#sign-in). |
 | `deploy.sh` | `prepare-frontend.sh` + `preflight.sh` + `cf push`, in one command. `--with-batch` / `--without-batch` / `--dry-run`. |
 | `lib.sh` | Helpers the scripts share. |
 
@@ -30,6 +31,10 @@ org/space you are deploying to).
 | `rocky-sharepoint-batch-<version>.jar` | *Only if you deploy the batch job.* GitHub Packages (Maven): `com.example:rocky-sharepoint-batch` |
 | `frontend-dist.tar.gz` | GitHub Release `frontend-latest` |
 | this `offline/` folder | the repo |
+
+**Take the backend jar and the frontend bundle from the same build.** Every state-changing request now needs a CSRF token that
+the frontend fetches from the backend's `/api/csrf`: a new backend rejects an old frontend's logins and uploads with
+403, and a new frontend cannot call an old backend. Download both at the same time, and redeploy both together.
 
 Packages are SNAPSHOTs, so file names carry a timestamp, for example
 `rocky-backend-0.0.1-20261015.171059-2.jar` - put the name you downloaded in `vars.yml`
@@ -189,6 +194,8 @@ The backend accepts document uploads up to **100 MB** per file. On Cloud Foundry
 - **Memory.** Ingestion reads the whole file into the heap and Tika/PDFBox then parses it, so one 100 MB upload needs several hundred MB of heap at once, and a second concurrent one the same again. The default `backend-memory: 1500M` suits ordinary documents; raise it before uploading files near the limit.
 - **Disk.** Tomcat spills each part past 2 MB to the JVM temp directory, which is the container's writable layer and counts against `backend-disk`. Set `SPRING_SERVLET_MULTIPART_LOCATION` only if you mount somewhere else.
 - **The path in front.** Anything between the client and GoRouter - a load balancer, a WAF, a corporate proxy - may have its own request-body size limit or timeout. GoRouter sets no body limit itself; its request timeout is the foundation's (ask the platform operator). **This is untested against a real foundation.** An upload over the limit is answered `413`.
+
+**Upgrading an existing deployment:** deploy the backend jar and the frontend bundle together (see above). The new settings (`auth-mode`, `sso-service`, `sso-bind-params`, `registration-enabled`, `retrieval-top-k`) are all optional, so an existing `vars.yml` keeps working and sign-in stays local accounts.
 
 **Upgrading an existing `vars.yml`:** add `backend-disk: 2G`, and `backend-app: rocky-backend` and `frontend-app: rocky-frontend` (and `batch-app: rocky-sharepoint-batch` if you deploy the batch job); `preflight.sh` names any variable that is missing.
 
