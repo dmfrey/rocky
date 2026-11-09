@@ -471,6 +471,8 @@ On the dev foundation every table in `public` is owned by **`pgadmin`** (a super
 
 ### Executable jar (CI)
 
+**Build metadata, and the `[MISSING] git.properties` staging warning.** The Java buildpack's "Tanzu Secure Defaults" step warns at every staging, on the error stream and without failing it, that the app lacks the Tanzu Platform onboarding artifacts: `git.properties`, the Tanzu Spring SDK and the Tanzu Spring Build Plugin. Both Java apps now generate the first with `com.gorylenko.gradle-git-properties` (commit id/branch/time, `failOnNoGitDirectory = false` so a build from a source archive still works) plus Boot's `springBoot { buildInfo() }` (`META-INF/build-info.properties`, shown by `/actuator/info`). `buildInfo()` alone would **not** clear that line - it writes `build-info.properties`, not `git.properties`. The other two warnings (SDK, build plugin) are Tanzu's own artifacts and are not added; they are cosmetic. Whether the buildpack accepts what we generate is only confirmable by the next staging log.
+
 `.github/workflows/backend.yaml` runs the backend and ingestion-core tests, then (on push to `main`, or manual dispatch) publishes the backend's `bootJar` to this repo's GitHub Packages Maven registry (`com.example:rocky-backend`, see CI/CD below), authenticating with the workflow's own `GITHUB_TOKEN`. `deploy-cf.yaml` builds the same `./gradlew :backend:bootJar` itself before `cf push`. Locally, `./gradlew :backend:bootJar` writes `backend/build/libs/backend-<version>.jar`.
 
 (`sharepoint-batch` is built the same way: `sharepoint-batch.yaml` publishes its `bootJar`; `./gradlew :sharepoint-batch:bootJar` builds it locally.)

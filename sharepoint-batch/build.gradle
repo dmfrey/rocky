@@ -13,6 +13,7 @@ plugins {
     id 'maven-publish'
     id 'org.springframework.boot' version '4.1.1'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.gorylenko.gradle-git-properties' version '4.0.1'
 }
 
 group = 'com.example'
@@ -22,6 +23,18 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
     }
+}
+
+// Build metadata for the running app: META-INF/build-info.properties (name, version, build time - what
+// /actuator/info shows) and git.properties (commit id and time - the Java buildpack's Tanzu Platform
+// onboarding check looks for it and otherwise warns "[MISSING] git.properties" at staging, see CLAUDE.md).
+springBoot {
+    buildInfo()
+}
+
+gitProperties {
+    // A build from a source archive with no .git directory must still succeed - it just has no commit info.
+    failOnNoGitDirectory = false
 }
 
 repositories {
