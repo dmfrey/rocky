@@ -84,6 +84,9 @@ class OidcLoginFlowIT {
     @Autowired
     private SaveUserPort saveUser;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
     @Test
     void ssoLoginCreatesTheUserAndEstablishesASession() throws Exception {
         CookieJar cookies = new CookieJar();
@@ -97,6 +100,9 @@ class OidcLoginFlowIT {
 
         User provisioned = loadUser.loadByUsername("alice").orElseThrow();
         assertThat(provisioned.isExternallyAuthenticated()).as("an SSO user has no local password").isTrue();
+        // password_hash is NOT NULL and cannot be altered where the app's role does not own the table, so the
+        // row holds a marker that is not a valid BCrypt hash.
+        assertThat(jdbc.queryForObject("select password_hash from users where username = 'alice'", String.class)).isEqualTo("{sso}");
     }
 
     @Test

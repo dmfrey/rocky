@@ -5,9 +5,6 @@ databaseChangeLog:
   - include:
       file: db/changelog/users/db.changelog-users-002.yaml
       relativeToChangelogFile: false
-  - include:
-      file: db/changelog/users/db.changelog-users-003.yaml
-      relativeToChangelogFile: false
   # documents-001/002/003 now live in ingestion-core (see CLAUDE.md's Database Migrations
   # section) - resolved via classpath, same as spring-ai-model-chat-memory-repository-jdbc's
   # vendor-shipped schema-postgresql.sql below. Backend remains the sole Liquibase runner

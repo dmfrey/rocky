@@ -188,6 +188,16 @@ prompt ~= top-k x chunk-size  +  chat history (up to 20 messages)  +  system pro
 - If the chat service's plan grants several models, name one with `APP_GENAI_CHAT_MODEL`; the backend refuses to start
   rather than guess.
 
+### Database ownership and migrations
+
+The backend runs its own Liquibase migrations at startup, as the database role from its service binding. A migration that
+**alters an existing table** (as opposed to creating one) needs that role to **own** the table. If your tables were
+created by a different role - for example by an administrator account, before the app was bound to the service - the backend
+fails at startup with `ERROR: must be owner of table <name>` and keeps crash-looping. Check with
+`select tablename, tableowner from pg_tables where schemaname = 'public'`; if the owner is not the role in the binding
+(`cf env <backend-app>`, `credentials.user`), either have the owner run the DDL or transfer ownership
+(`ALTER TABLE <name> OWNER TO <role>`). A fresh database that the backend itself populated is not affected.
+
 ### Document uploads
 
 The backend accepts document uploads up to **100 MB** per file. On Cloud Foundry that has three consequences, none of them in the application's own config:
