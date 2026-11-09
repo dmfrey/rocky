@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SettingsPage } from "./SettingsPage";
 import { useAuth } from "../auth/AuthContext";
+import { useAuthConfig } from "../auth/useAuthConfig";
 import { usersApi } from "../api/users";
 import { ApiError } from "../api/client";
 import type { User } from "../api/types";
@@ -19,6 +20,10 @@ function renderPage() {
 
 vi.mock("../auth/AuthContext", () => ({
   useAuth: vi.fn(),
+}));
+
+vi.mock("../auth/useAuthConfig", () => ({
+  useAuthConfig: vi.fn(),
 }));
 
 vi.mock("../api/users", () => ({
@@ -43,6 +48,10 @@ const user: User = {
 const refreshUser = vi.fn();
 
 beforeEach(() => {
+  vi.mocked(useAuthConfig).mockReturnValue({
+    config: { mode: "jdbc", registrationEnabled: true, loginUrl: null },
+    isLoading: false,
+  });
   vi.mocked(useAuth).mockReturnValue({
     user,
     isLoading: false,
@@ -76,6 +85,20 @@ describe("SettingsPage - Profile tab", () => {
     );
     expect(await screen.findByText("Profile saved.")).toBeInTheDocument();
     expect(refreshUser).toHaveBeenCalledWith({ ...user, firstName: "Alicia" });
+  });
+});
+
+describe("SettingsPage - oidc mode", () => {
+  it("has no Security tab, since there is no local password to change", () => {
+    vi.mocked(useAuthConfig).mockReturnValue({
+      config: { mode: "oidc", registrationEnabled: false, loginUrl: "/oauth2/authorization/sso" },
+      isLoading: false,
+    });
+    renderPage();
+
+    expect(screen.getByRole("button", { name: "Profile" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Archived Chats" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Security" })).not.toBeInTheDocument();
   });
 });
 

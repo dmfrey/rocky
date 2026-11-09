@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { useAuthConfig } from "../auth/useAuthConfig";
 import { ApiError } from "../api/client";
 import { AuthCard } from "../components/AuthCard";
 
 export function RegisterPage() {
   const { register, login } = useAuth();
+  const { config, isLoading: configLoading } = useAuthConfig();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -30,6 +32,15 @@ export function RegisterPage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (configLoading) {
+    return null;
+  }
+
+  // No self-registration when the deployment turned it off, or when accounts come from SSO.
+  if (!config || config.mode !== "jdbc" || !config.registrationEnabled) {
+    return <Navigate to="/login" replace />;
   }
 
   return (

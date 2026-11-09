@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthContext";
+import { useAuthConfig } from "../auth/useAuthConfig";
 import { usersApi } from "../api/users";
 import { ApiError } from "../api/client";
 import { ArchivedChatsSection } from "../components/ArchivedChatsSection";
@@ -15,6 +16,9 @@ const TABS: { id: Tab; label: string }[] = [
 
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
+  const { config } = useAuthConfig();
+  // The Security tab only holds "change password" - with SSO the password lives at the identity provider.
+  const tabs = config?.mode === "oidc" ? TABS.filter((tab) => tab.id !== "security") : TABS;
 
   return (
     <div className="page">
@@ -26,7 +30,7 @@ export function SettingsPage() {
       </div>
       <div className="settings-content">
         <div className="settings-tabs" aria-label="Settings sections">
-          {TABS.map((tab) => (
+          {tabs.map((tab) => (
             <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} aria-pressed={activeTab === tab.id}>
               {tab.label}
             </button>
@@ -35,7 +39,7 @@ export function SettingsPage() {
 
         <div className="panel settings-panel">
           {activeTab === "profile" && <ProfileSection />}
-          {activeTab === "security" && <SecuritySection />}
+          {activeTab === "security" && tabs.some((tab) => tab.id === "security") && <SecuritySection />}
           {activeTab === "archived" && <ArchivedChatsSection />}
         </div>
       </div>

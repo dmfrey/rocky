@@ -1,4 +1,4 @@
-import { api, ApiError, API_BASE_URL } from "./client";
+import { api, ApiError, fetchWithCsrf } from "./client";
 import type { ChatMessage, ChatSession, Citation } from "./types";
 
 export const chatApi = {
@@ -24,12 +24,16 @@ export interface StreamHandlers {
  * fetch()'s ReadableStream instead. Spring's ServerSentEvent.format() emits "event:<type>\n" and
  * "data:<json>\n" lines (no space after the colon) separated by a blank line per event.
  */
-export function sendMessageStream(sessionId: number, content: string, handlers: StreamHandlers, signal?: AbortSignal): void {
+export function sendMessageStream(
+  sessionId: number,
+  content: string,
+  handlers: StreamHandlers,
+  signal?: AbortSignal,
+): void {
   void (async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/chats/${sessionId}/messages`, {
+      const response = await fetchWithCsrf(`/api/chats/${sessionId}/messages`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
         body: JSON.stringify({ content }),
         signal,

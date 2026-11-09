@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { sendMessageStream } from "./chat";
+import { clearCsrfToken } from "./client";
 import type { Citation } from "./types";
 
 function streamFromChunks(chunks: string[]): ReadableStream<Uint8Array> {
@@ -18,14 +19,18 @@ function streamFromChunks(chunks: string[]): ReadableStream<Uint8Array> {
 }
 
 function mockStreamingResponse(chunks: string[], status = 200) {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async () => new Response(streamFromChunks(chunks), { status })),
+  const fetchMock = vi.fn(async (url: string, _init?: RequestInit) =>
+    url.endsWith("/api/csrf")
+      ? Response.json({ headerName: "X-CSRF-TOKEN", token: "csrf-1" })
+      : new Response(streamFromChunks(chunks), { status }),
   );
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
 }
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  clearCsrfToken();
 });
 
 describe("sendMessageStream", () => {
@@ -55,6 +60,17 @@ describe("sendMessageStream", () => {
 
     expect(tokens).toEqual(["Hello", " world"]);
     expect(sources).toEqual([{ documentId: 1, filename: "a.pdf" }]);
+  });
+
+  it("sends the CSRF token with the POST", async () => {
+    const fetchMock = mockStreamingResponse(['event:token\ndata:{"text":"hi"}\n\n']);
+
+    await new Promise<void>((resolve, reject) => {
+      sendMessageStream(1, "hi", { onToken: () => {}, onSources: () => {}, onError: reject, onDone: resolve });
+    });
+
+    const post = fetchMock.mock.calls.find(([url]) => url.endsWith("/messages"))!;
+    expect((post[1] as RequestInit).headers).toMatchObject({ "X-CSRF-TOKEN": "csrf-1" });
   });
 
   it("calls onError, not onDone, when the response is not ok", async () => {

@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: authApi.logout,
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       // Logout invalidates the server session, including its consent acknowledgment.
       // Discard the previous user's cached content and show the new session's notice.
       await queryClient.cancelQueries();
@@ -46,6 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       queryClient.setQueryData(ME_QUERY_KEY, null);
       await queryClient.resetQueries({ queryKey: ["banner"] });
+      // oidc mode: the SSO session has to end too, or the next page load signs straight back in. That
+      // hop is a top-level browser navigation (fetch would follow the redirect cross-origin, without
+      // cookies), so the backend hands the IdP's end-session URL back instead of redirecting.
+      if (result?.logoutUrl) {
+        window.location.assign(result.logoutUrl);
+      }
     },
   });
 
